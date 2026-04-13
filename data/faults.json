@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "marker_id": "fault_marker_A",
+    "title": "Exposed Signalling Wire",
+    "description": "Insulation worn away on primary signal wire bundle. Requires immediate taping and secondary conduit check.",
+    "location": "Tunnel Sector 4, North Wall",
+    "status": "Active",
+    "reported_by_id": 2,
+    "timestamp": "2024-10-24T09:15:00Z",
+    "resolved_by_id": null,
+    "resolution_notes": null
+  }
+]

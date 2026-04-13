@@ -1,0 +1,16 @@
+[
+  {
+    "asset_id": "DRL-882",
+    "marker_id": "qr_tool_1",
+    "category": "Hammer Drill",
+    "status": "Available",
+    "current_user_id": null
+  },
+  {
+    "asset_id": "WRN-105",
+    "marker_id": "qr_tool_2",
+    "category": "Torque Wrench",
+    "status": "Checked-Out",
+    "current_user_id": 2
+  }
+]
