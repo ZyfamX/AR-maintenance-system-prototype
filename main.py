@@ -168,6 +168,27 @@ def scan_tool_marker(payload: ToolScan):
     raise HTTPException(status_code=404, detail="Tool marker not recognized in database")
 
 
+
+# Helper function to record system events for security and auditing purposes
+def log_system_event(user_id: int, action: str, details: str):
+    """Helper function to record security and system events."""
+    logs = read_json("audit_logs.json")
+    
+    # Get New ID (highest existing ID + 1)
+    new_id = max([log.get("id", 0) for log in logs], default=0) + 1
+    
+    new_log = {
+        "id": new_id,
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "user_id": user_id,
+        "action": action,
+        "details": details,
+    }
+    
+    logs.append(new_log)
+    write_json("audit_logs.json", logs)
+
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.get("/")
 def serve_home():
