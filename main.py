@@ -7,10 +7,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from typing import List
 from datetime import datetime
-from schemas import FaultCreate, FaultUpdate, ToolScan, UserLogin, UserOut
-
 # Import Pydantic schemas to validate data going out
-from schemas import FaultOut, ToolOut
+from schemas import FaultCreate, FaultUpdate, ToolScan, UserLogin, UserOut, FaultOut, ToolOut
 
 app = FastAPI(title="AR Maintenance System API")
 
