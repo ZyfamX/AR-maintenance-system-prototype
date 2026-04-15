@@ -179,7 +179,7 @@ def log_system_event(user_id: int, action: str, details: str):
     
     new_log = {
         "id": new_id,
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.utcnow().isoformat(),
         "user_id": user_id,
         "action": action,
         "details": details,
