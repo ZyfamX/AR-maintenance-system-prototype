@@ -74,3 +74,13 @@ class ToolOut(BaseModel):
     current_user_id: Optional[int] = None
     checkout_timestamp: Optional[str] = None
 
+
+# =================================================================================================================
+# AUDIT LOG SCHEMAS
+
+class AuditlogCreate(BaseModel):
+
+    timestamp: str
+    user_id: Optional[int] = None # Nullable
+    action: str  # "Successful_Login", "Tool_Checked_Out", "Fault_Reported"
+    details: str # "User J.Smith checked out tool 1" or "Fault 5 reported at location X"
