@@ -32,12 +32,13 @@ class FaultCreate(BaseModel):
     reported_by_id: int # Reference to the user ID who reported the fault
 
 
-# What the Supervisor dashboard sends to resolve a fault
+# What the Supervisor dashboard sends to assign OR resolve a fault
 class FaultUpdate(BaseModel):
 
-    status: str = Field(pattern="^(Active|Resolved)$")
-    resolved_by_id: int
-    resolution_notes: Optional[str] = None
+    status: str = Field(pattern="^(Active|Assigned|Resolved)$")
+    assigned_to_id: Optional[int] = None
+    resolved_by_id: Optional[int] = None
+    notes: Optional[str] = None
 
 
 # What the backend sends to the dashboard list
@@ -49,10 +50,11 @@ class FaultOut(BaseModel):
     description: str
     location: str
     status: str
-    reported_by_id: int
     timestamp: str
+    reported_by_id: int
+    assigned_to_id: Optional[int] = None
     resolved_by_id: Optional[int] = None
-    resolution_notes: Optional[str] = None
+    notes: Optional[str] = None
 
 # ===============================================================================================================
 # TOOL SCHEMAS
@@ -69,7 +71,7 @@ class ToolOut(BaseModel):
     
     asset_id: str
     marker_id: str
-    category: str
+    tool_type: str
     status: str
     current_user_id: Optional[int] = None
     checkout_timestamp: Optional[str] = None

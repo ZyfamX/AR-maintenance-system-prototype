@@ -8,7 +8,8 @@
     "status": "Active",
     "reported_by_id": 2,
     "timestamp": "2024-10-24T09:15:00",
+    "assigned_to_id": null,
     "resolved_by_id": null,
-    "resolution_notes": null
+    "notes": null
   }
 ]

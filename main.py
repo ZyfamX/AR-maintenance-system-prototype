@@ -70,7 +70,7 @@ def login_user(credentials: UserLogin):
 
 # FAULT ROUTES ==============================================================================================================================
 
-# Fetches a specific active fault when a user scans a wall marker in AR
+# Fetches a specific active/assigned fault when a user scans a wall marker in AR
 @app.get("/api/faults/marker/{marker_id}", response_model=FaultOut)
 def get_fault_by_marker(marker_id: str):
 
@@ -78,13 +78,14 @@ def get_fault_by_marker(marker_id: str):
 
     for fault in faults:
 
-        if fault["marker_id"] == marker_id and fault["status"] == "Active":
+        # AR needs to show the fault if it's active OR if someone is assigned to fix it
+        if fault["marker_id"] == marker_id and fault["status"] in ["Active", "Assigned"]:
             return fault
         
-    raise HTTPException(status_code=404, detail="No active fault found for this marker")
+    raise HTTPException(status_code=404, detail="No active or assigned fault found for this marker")
 
 
-# Creates new fault record when a technician submits a report from the AR app
+# Creates new fault record
 @app.post("/api/faults", response_model=FaultOut, status_code=201)
 def create_new_fault(payload: FaultCreate):
 
@@ -101,31 +102,48 @@ def create_new_fault(payload: FaultCreate):
         "location": payload.location,
         "status": "Active",
         "reported_by_id": payload.reported_by_id,
-        "timestamp": datetime.utcnow().isoformat(), # WHAT IS GOING ON WITH THIS TIMESTAMP FORMAT
+        "timestamp": datetime.utcnow().isoformat() + "Z", # Standardized UTC format
+        "assigned_to_id": None,      
         "resolved_by_id": None,
-        "resolution_notes": None
+        "notes": None
     }
     
     faults.append(new_fault)
     write_json("faults.json", faults)
 
+    # Log the action for the audit trail
+    log_system_event(
+        user_id=payload.reported_by_id, 
+        action="FAULT_REPORTED", 
+        details=f"New fault logged at {payload.location}: {payload.title}"
+    )
+
     return new_fault
 
 
-# Allows Supervisor to Update Faults status to "Resolved" from dashboard
+# Allows Supervisor to Update Faults (Assign or Resolve) from dashboard
 @app.patch("/api/faults/{fault_id}", response_model=FaultOut)
-def resolve_fault(fault_id: int, payload: FaultUpdate):
+def update_fault(fault_id: int, payload: FaultUpdate):
 
     faults = read_json("faults.json")
     
     for fault in faults:
-
         if fault["id"] == fault_id:
-
+            
+            # Update the fault with new assignment or resolution data
             fault["status"] = payload.status
+            fault["assigned_to_id"] = payload.assigned_to_id
             fault["resolved_by_id"] = payload.resolved_by_id
             fault["resolution_notes"] = payload.resolution_notes
+            
             write_json("faults.json", faults)
+
+            # Log the update for the audit trail
+            log_system_event(
+                user_id=payload.resolved_by_id or payload.assigned_to_id, 
+                action=f"FAULT_UPDATED_{payload.status.upper()}", 
+                details=f"Fault {fault_id} status changed to {payload.status}."
+            )
 
             return fault
             
@@ -148,7 +166,7 @@ def scan_tool_marker(payload: ToolScan):
 
                 tool["status"] = "Checked-Out"
                 tool["current_user_id"] = payload.user_id
-                tool["checkout_timestamp"] = datetime.utcnow().isoformat() # WHAT IS GOING ON WITH THIS TIMESTAMP FORMAT
+                tool["checkout_timestamp"] = datetime.utcnow().isoformat() + "Z"# WHAT IS GOING ON WITH THIS TIMESTAMP FORMAT
                 
                 # Log the tool checkout event
                 log_system_event(
@@ -186,7 +204,7 @@ def log_system_event(user_id: int, action: str, details: str):
     
     new_log = {
         "id": new_id,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.utcnow().isoformat() + "Z",
         "user_id": user_id,
         "action": action,
         "details": details,

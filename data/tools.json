@@ -2,7 +2,7 @@
   {
     "id": "1",
     "marker_id": "tool_drill_01",
-    "category": "Hammer Drill",
+    "tool_type": "Hammer Drill",
     "status": "Available",
     "current_user_id": null,
     "checkout_time": null
@@ -10,7 +10,7 @@
   {
     "asset_id": "2",
     "marker_id": "tool_wrench_04",
-    "category": "Torque Wrench",
+    "tool_type": "Torque Wrench",
     "status": "Checked-Out",
     "current_user_id": 2,
     "checkout_time": null
