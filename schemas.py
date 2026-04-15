@@ -3,8 +3,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional
 
-# ================================================================================================================
-# USER SCHEMAS
+# USER SCHEMAS ================================================================================================================
 class UserLogin(BaseModel):
     
     username: str
@@ -19,8 +18,7 @@ class UserOut(BaseModel):
     last_name: str
     role: str
 
-# ================================================================================================================
-# FAULT SCHEMAS
+# FAULT SCHEMAS ================================================================================================================
 
 # What the AR app sends when scanning a new fault
 class FaultCreate(BaseModel):
@@ -56,8 +54,8 @@ class FaultOut(BaseModel):
     resolved_by_id: Optional[int] = None
     notes: Optional[str] = None
 
-# ===============================================================================================================
-# TOOL SCHEMAS
+
+# TOOL SCHEMAS ===============================================================================================================
 
 # What the AR app sends when a tool marker is scanned
 class ToolScan(BaseModel):
