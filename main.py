@@ -150,6 +150,13 @@ def scan_tool_marker(payload: ToolScan):
                 tool["current_user_id"] = payload.user_id
                 tool["checkout_timestamp"] = datetime.utcnow().isoformat() # WHAT IS GOING ON WITH THIS TIMESTAMP FORMAT
                 
+                # Log the tool checkout event
+                log_system_event(
+                    user_id=payload.user_id, 
+                    action="TOOL_CHECKOUT", 
+                    details=f"Tool {tool['id']} checked out successfully."
+                )
+
             # Tool is checked out by THIS user: Check it back in
             elif tool["status"] == "Checked-Out" and tool["current_user_id"] == payload.user_id:
 
