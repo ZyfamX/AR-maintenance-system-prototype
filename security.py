@@ -1,4 +1,3 @@
-# security.py
 import re
 from datetime import datetime, timedelta
 
@@ -19,5 +18,3 @@ def check_password_complexity(password: str) -> bool:
     if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
         return False
     return True
-
-# You can also add your JWT token generation logic here!
