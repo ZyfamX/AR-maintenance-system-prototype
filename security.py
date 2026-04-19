@@ -1,20 +1,35 @@
+from passlib.context import CryptContext
 import re
 from datetime import datetime, timedelta
 
-# Checks if the password matches the hash
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return False
-# Encrypts the password before saving to JSON
-def hash_password(password: str) -> str:
-    return "hashed"
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# password is 8+ chars, 1 number, 1 special char (Requirement NF12)
+# Password requirement configuration
+# 8+ chars, 1 number, 1 special char (Requirement NF12)
+pwd_min_length = 8
+pwd_min_digits = 1
+pwd_min_special_chars = 1
+
+# Test passwords
+#print(pwd_context.hash("J@Sm!th1"))
+#print(pwd_context.hash("A@Dav!s2"))
+
+# Checks if the password matches the hash (Requirement F1)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+# Encrypts the password before saving to JSON (Requirement F6)
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+# Checks password against password requirements (Requirement NF12)
 def check_password_complexity(password: str) -> bool:
 
-    if len(password) < 8:
+    if len(password) < pwd_min_length:
         return False
-    if not re.search(r"\d", password):
+    if len(re.findall(r"\d", password)) < pwd_min_digits:
         return False
-    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+    if len(re.findall(r"[!@#$%^&*(),.?\":{}|<>]", password)) < pwd_min_special_chars:
         return False
+    
     return True

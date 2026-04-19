@@ -9,6 +9,7 @@ from typing import List
 from datetime import datetime
 # Import Pydantic schemas to validate data going out
 from schemas import FaultCreate, FaultUpdate, ToolScan, UserLogin, UserOut, FaultOut, ToolOut
+from security import verify_password
 
 app = FastAPI(title="AR Maintenance System API")
 
@@ -58,10 +59,11 @@ def login_user(credentials: UserLogin):
     users = read_json("users.json")
 
     for user in users:
-
-        # We need to hash credentials password and compare it
         if user["username"] == credentials.username:
-            return user
+            if verify_password(credentials.password, user["password_hash"]):
+                return user
+            
+            break # Correct username but wrong password
         
     raise HTTPException(status_code=401, detail="Invalid username or password")
 
