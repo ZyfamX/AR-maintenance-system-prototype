@@ -1,4 +1,7 @@
+import os
+import json
 from passlib.context import CryptContext
+from threading import Lock
 import re
 from datetime import datetime, timedelta
 
@@ -33,3 +36,21 @@ def check_password_complexity(password: str) -> bool:
         return False
     
     return True
+
+# Helper function to record system events for security and auditing purposes
+log_lock = Lock()
+
+audit_log_file = os.path.join("data", "audit.log")
+
+def log_system_event(user_id: int, action: str, details: str):
+    
+    new_log = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "user_id": user_id,
+        "action": action,
+        "details": details,
+    }
+    
+    with log_lock:
+        with open(audit_log_file, "a") as f:
+            f.write(json.dumps(new_log) + "\n")
