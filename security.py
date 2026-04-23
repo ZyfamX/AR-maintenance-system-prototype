@@ -15,8 +15,8 @@ pwd_min_digits = 1
 pwd_min_special_chars = 1
 
 # Test passwords
-#print(pwd_context.hash("J@Sm!th1"))
-#print(pwd_context.hash("A@Dav!s2"))
+#print(pwd_context.hash("J@Sm!th1")) # $2b$12$Qa1KU4OqnJa/jd7SIddl2erOjHsGQicj5Qi6YeFVvDrsRhLpxex/O
+#print(pwd_context.hash("A@Dav!s2")) # $2b$12$f/l4pDsvheu5YNHuJprNNehZD4BRwRS1hszd7vBDfBmlnKpr8/3X2
 
 # Checks if the password matches the hash (Requirement F1)
 def verify_password(plain_password: str, hashed_password: str) -> bool:
