@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from typing import List
-from datetime import datetime
+from datetime import datetime, UTC
 # Import Pydantic schemas to validate data going out
 from schemas import FaultCreate, FaultUpdate, ToolScan, UserLogin, UserOut, FaultOut, ToolOut
 from security import verify_password, log_system_event, verify_audit_log
@@ -102,7 +102,7 @@ def create_new_fault(payload: FaultCreate):
         "location": payload.location,
         "status": "Active",
         "reported_by_id": payload.reported_by_id,
-        "timestamp": datetime.utcnow().isoformat() + "Z", # Standardized UTC format
+        "timestamp": datetime.now(UTC).isoformat() + "Z", # Standardized UTC format
         "assigned_to_id": None,      
         "resolved_by_id": None,
         "notes": None
@@ -166,7 +166,7 @@ def scan_tool_marker(payload: ToolScan):
 
                 tool["status"] = "Checked-Out"
                 tool["current_user_id"] = payload.user_id
-                tool["checkout_timestamp"] = datetime.utcnow().isoformat() + "Z"# WHAT IS GOING ON WITH THIS TIMESTAMP FORMAT
+                tool["checkout_timestamp"] = datetime.now(UTC).isoformat() + "Z"# WHAT IS GOING ON WITH THIS TIMESTAMP FORMAT
                 
                 # Log the tool checkout event
                 log_system_event(
