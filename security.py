@@ -43,7 +43,7 @@ log_lock = Lock()
 
 audit_log_file = os.path.join("data", "audit.log")
 
-def log_system_event(user_id: int, action: str, details: str):
+def log_system_event(user_id: int | None, action: str, details: str):
     
     new_log = {
         "timestamp": datetime.utcnow().isoformat() + "Z",

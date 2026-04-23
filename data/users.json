@@ -2,7 +2,9 @@
   {
     "id": 1,
     "username": "j.smith_sup",
-    "password_hash": "$2b$12$cxEgUL6mitAWqNNasN6OuubZLRvRw52wy2WA9Bu2yF2AvO86qCPvq", 
+    "password_hash": "$2b$12$cxEgUL6mitAWqNNasN6OuubZLRvRw52wy2WA9Bu2yF2AvO86qCPvq",
+    "failed_attempts": 0,
+    "lock_until": null,
     "first_name": "John",
     "last_name": "Smith",
     "role": "Supervisor"
@@ -11,6 +13,8 @@
     "id": 2,
     "username": "a.davis_tech",
     "password_hash": "$2b$12$EFm/PoCIFGq9wb7WQY3zKO/TtPDCy5qvSvxAv48OxK..W08fiNLBG",
+    "failed_attempts": 0,
+    "lock_until": null,
     "first_name": "Amina",
     "last_name": "Davis",
     "role": "Technician"

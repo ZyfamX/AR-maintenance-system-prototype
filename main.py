@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from typing import List
-from datetime import datetime, UTC
+from datetime import datetime, timedelta, UTC
 # Import Pydantic schemas to validate data going out
 from schemas import FaultCreate, FaultUpdate, ToolScan, UserLogin, UserOut, FaultOut, ToolOut
 from security import verify_password, log_system_event, verify_audit_log
@@ -85,14 +85,36 @@ def get_all_tools():
 
 # USER ROUTE ==============================================================================================================================
 
+# Defines failed login attempt lock config according to requirement F8
+lock_threshold = 5
+lock_duration_minutes = 10
+
 @app.post("/api/login", response_model=UserOut)
 def login_user(credentials: UserLogin, response: Response):
 
     users = read_json("users.json")
+    now = datetime.now(UTC)
 
     for user in users:
         if user["username"] == credentials.username:
+            # Check if account locked
+            if user["lock_until"]:
+                lock_time = datetime.fromisoformat(user["lock_until"])
+
+                if now < lock_time:
+                    log_system_event(user["id"], "Blocked_Login", "Attempt to log in to locked account.")
+                    raise HTTPException(status_code=403, detail="Account temporarily locked")
+                else:
+                    user["lock_until"] = None
+                    user["failed_attempts"] = 0
+
+            # Check password
             if verify_password(credentials.password, user["password_hash"]):
+                user["lock_until"] = None
+                user["failed_attempts"] = 0
+
+                write_json("users.json", users)
+
                 session_id = generate_session(user["id"])
 
                 response.set_cookie(
@@ -104,9 +126,26 @@ def login_user(credentials: UserLogin, response: Response):
                     max_age=600
                 )
 
+                log_system_event(user["id"], "Successful_Login", f"User {user["username"]} successfully logged in.")
+
                 return user
             
-            break # Correct username but wrong password
+            # Wrong password
+            user["failed_attempts"] += 1
+
+            if user["failed_attempts"] >= lock_threshold:
+                user["lock_until"] = (now + timedelta(minutes=lock_duration_minutes)).isoformat()
+                user["failed_attempts"] = 0
+
+                log_system_event(user["id"], "Account_Locked", f"Too many failed login attempts.")
+            else:
+                log_system_event(user["id"], "Unsuccessful_Login", f"Wrong password entered for user {user["username"]}.")
+            
+            write_json("users.json", users)
+            break
+
+    # Unknown username or failed login
+    log_system_event(None, "Unsuccessful_Login", f"Unknown username: {credentials.username}")
         
     raise HTTPException(status_code=401, detail="Invalid username or password")
 
@@ -118,6 +157,8 @@ def logout(request: Request, response: Response):
         remove_session(session_id)
 
     response.delete_cookie("session_id")
+
+    log_system_event(request.state.user_id, "Successful_Logout", "User successfully logged out.")
 
     return {"message": "Logged out successfully"}
 
