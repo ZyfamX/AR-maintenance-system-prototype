@@ -12,7 +12,12 @@ def store_session(session_id: str, user_id: str, expiry_time: datetime):
         sessions = {}
         if os.path.exists(sessions_file) and os.path.getsize(sessions_file) > 0:
             with open(sessions_file, "r", encoding="utf-8") as f:
-                sessions = json.load(f)
+                data = json.load(f)
+
+                if isinstance(data, dict):
+                    sessions = data
+                else:
+                    sessions = {}
 
         sessions[session_id] = {
             "user_id": user_id,
