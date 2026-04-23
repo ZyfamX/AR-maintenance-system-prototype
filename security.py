@@ -15,11 +15,15 @@ pwd_min_digits = 1
 pwd_min_special_chars = 1
 
 # Test passwords
+# j.smith_sup
 #print(pwd_context.hash("J@Sm!th1")) # $2b$12$Qa1KU4OqnJa/jd7SIddl2erOjHsGQicj5Qi6YeFVvDrsRhLpxex/O
+# a.davis_tech
 #print(pwd_context.hash("A@Dav!s2")) # $2b$12$f/l4pDsvheu5YNHuJprNNehZD4BRwRS1hszd7vBDfBmlnKpr8/3X2
 
 # Checks if the password matches the hash (Requirement F1)
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    if not hashed_password.startswith("$2"):
+        raise ValueError("Invalid hash format")
     return pwd_context.verify(plain_password, hashed_password)
 
 # Encrypts the password before saving to JSON (Requirement F6)
