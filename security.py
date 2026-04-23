@@ -1,12 +1,10 @@
+import bcrypt
 import os
 import json
-from passlib.context import CryptContext
 from threading import Lock
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, UTC
 import hashlib
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Password requirement configuration
 # 8+ chars, 1 number, 1 special char (Requirement NF12)
@@ -14,21 +12,25 @@ pwd_min_length = 8
 pwd_min_digits = 1
 pwd_min_special_chars = 1
 
-# Test passwords
-# j.smith_sup
-#print(pwd_context.hash("J@Sm!th1")) # $2b$12$Qa1KU4OqnJa/jd7SIddl2erOjHsGQicj5Qi6YeFVvDrsRhLpxex/O
-# a.davis_tech
-#print(pwd_context.hash("A@Dav!s2")) # $2b$12$f/l4pDsvheu5YNHuJprNNehZD4BRwRS1hszd7vBDfBmlnKpr8/3X2
-
 # Checks if the password matches the hash (Requirement F1)
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    if not hashed_password.startswith("$2"):
-        raise ValueError("Invalid hash format")
-    return pwd_context.verify(plain_password, hashed_password)
+    password_bytes = plain_password.encode("utf-8")
+    hash_bytes = hashed_password.encode("utf-8")
+
+    return bcrypt.checkpw(password_bytes, hash_bytes)
 
 # Encrypts the password before saving to JSON (Requirement F6)
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    password_bytes = password.encode("utf-8")[:72]
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    return hashed.decode("utf-8")
+
+# Test passwords
+# j.smith_sup
+# print(hash_password("J@Sm!th1")) # $2b$12$IR/e7pUMtLNXw.t7ekRPn.VL7KP6rgZC1SKrtqUbj6Su5KR5hcrey
+# a.davis_tech
+# print(hash_password("A@Dav!s2")) # $2b$12$6DcEOJZ5iXveztiwy3MscuPNPig6D.B8t4g./09vRVQUGRLvIDvCq
 
 # Checks password against password requirements (Requirement NF12)
 def check_password_complexity(password: str) -> bool:
@@ -50,7 +52,7 @@ audit_log_file = os.path.join("data", "audit.log")
 def log_system_event(user_id: int | None, action: str, details: str):
     
     new_log = {
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(UTC).isoformat() + "Z",
         "user_id": user_id,
         "action": action,
         "details": details,
