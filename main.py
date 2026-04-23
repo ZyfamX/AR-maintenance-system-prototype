@@ -2,14 +2,15 @@
 
 import json
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from typing import List
 from datetime import datetime, UTC
 # Import Pydantic schemas to validate data going out
 from schemas import FaultCreate, FaultUpdate, ToolScan, UserLogin, UserOut, FaultOut, ToolOut
 from security import verify_password, log_system_event, verify_audit_log
+from sessions import generate_session, validate_session, update_expiry, remove_session
 
 app = FastAPI(title="AR Maintenance System API")
 
@@ -29,6 +30,37 @@ def write_json(filename: str, data: list):
     
     with open(filepath, "w") as file:
         json.dump(data, file, indent=4)
+
+
+# Middleware for session authentication
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    # Routes that do NOT require authentication
+    public_paths = [
+        "/api/login",
+        "/health",
+        "/",
+        "/static"
+    ]
+
+    if any(request.url.path.startswith(path) for path in public_paths):
+        return await call_next(request)
+    
+    session_id = request.cookies.get("session_id")
+
+    if not session_id:
+        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
+    
+    result = validate_session(session_id)
+
+    if not result["valid"]:
+        return JSONResponse(status_code=401, content={"detail": result["error"]})
+    
+    request.state.user_id = result["user_id"]
+    # Update expiry so it only expires after 10 minutes of inactivity
+    update_expiry(session_id)
+
+    return await call_next(request)
 
 
 # ensure the server is running
@@ -54,19 +86,40 @@ def get_all_tools():
 # USER ROUTE ==============================================================================================================================
 
 @app.post("/api/login", response_model=UserOut)
-def login_user(credentials: UserLogin):
+def login_user(credentials: UserLogin, response: Response):
 
     users = read_json("users.json")
 
     for user in users:
         if user["username"] == credentials.username:
             if verify_password(credentials.password, user["password_hash"]):
+                session_id = generate_session(user["id"])
+
+                response.set_cookie(
+                    key="session_id",
+                    value=session_id,
+                    httponly=True,
+                    secure=False,
+                    samesite="lax",
+                    max_age=600
+                )
+
                 return user
             
             break # Correct username but wrong password
         
     raise HTTPException(status_code=401, detail="Invalid username or password")
 
+@app.post("/api/logout")
+def logout(request: Request, response: Response):
+    session_id = request.cookies.get("session_id")
+
+    if session_id:
+        remove_session(session_id)
+
+    response.delete_cookie("session_id")
+
+    return {"message": "Logged out successfully"}
 
 # FAULT ROUTES ==============================================================================================================================
 
@@ -87,7 +140,7 @@ def get_fault_by_marker(marker_id: str):
 
 # Creates new fault record
 @app.post("/api/faults", response_model=FaultOut, status_code=201)
-def create_new_fault(payload: FaultCreate):
+def create_new_fault(payload: FaultCreate, request: Request):
 
     faults = read_json("faults.json")
     
@@ -101,7 +154,7 @@ def create_new_fault(payload: FaultCreate):
         "description": payload.description,
         "location": payload.location,
         "status": "Active",
-        "reported_by_id": payload.reported_by_id,
+        "reported_by_id": request.state.user_id,
         "timestamp": datetime.now(UTC).isoformat() + "Z", # Standardized UTC format
         "assigned_to_id": None,      
         "resolved_by_id": None,
