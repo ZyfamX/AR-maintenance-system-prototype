@@ -11,7 +11,7 @@ def store_session(session_id: str, user_id: str, expiry_time: datetime):
     with session_lock:
         sessions = {}
         if os.path.exists(sessions_file) and os.path.getsize(sessions_file) > 0:
-            with open(sessions_file, "r") as f:
+            with open(sessions_file, "r", encoding="utf-8") as f:
                 sessions = json.load(f)
 
         sessions[session_id] = {
@@ -19,7 +19,7 @@ def store_session(session_id: str, user_id: str, expiry_time: datetime):
             "expires_at": expiry_time.isoformat()
         }
 
-        with open(sessions_file, "w") as f:
+        with open(sessions_file, "w", encoding="utf-8") as f:
             json.dump(sessions, f, indent=4)
 
 def generate_session(user_id: str) -> str:
@@ -47,7 +47,7 @@ def validate_session(provided_id: str) -> dict:
         if not os.path.exists(sessions_file):
             return {"valid": False, "user_id": None, "error": "No active sessions found"}
         
-        with open(sessions_file, "r") as f:
+        with open(sessions_file, "r", encoding="utf-8") as f:
             sessions = json.load(f)
 
         session_data = sessions.get(provided_id)
@@ -59,7 +59,7 @@ def validate_session(provided_id: str) -> dict:
         if datetime.now(UTC) > expiry:
             user_id = session_data["user_id"]
             del sessions[provided_id]
-            with open(sessions_file, "w") as f:
+            with open(sessions_file, "w", encoding="utf-8") as f:
                 json.dump(sessions, f, indent=4)
             return {"valid": False, "user_id": user_id, "error": "Session expired"}
         
@@ -70,18 +70,18 @@ def update_expiry(session_id: str):
     expiry_time = now + timedelta(minutes=10)
 
     with session_lock:        
-        with open(sessions_file, "r") as f:
+        with open(sessions_file, "r", encoding="utf-8") as f:
             sessions = json.load(f)
 
         if session_id in sessions:
             sessions[session_id]["expires_at"] = expiry_time.isoformat()
         
-        with open(sessions_file, "w") as f:
+        with open(sessions_file, "w", encoding="utf-8") as f:
             json.dump(sessions, f, indent=4)
 
 def remove_session(session_id: str):
     with session_lock:        
-        with open(sessions_file, "r") as f:
+        with open(sessions_file, "r", encoding="utf-8") as f:
             sessions = json.load(f)
 
         session = sessions.get(session_id)
@@ -92,7 +92,7 @@ def remove_session(session_id: str):
 
         del sessions[session_id]
 
-        with open(sessions_file, "w") as f:
+        with open(sessions_file, "w", encoding="utf-8") as f:
             json.dump(sessions, f, indent=4)
 
         return session

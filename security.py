@@ -53,7 +53,7 @@ def log_system_event(user_id: int | None, action: str, details: str):
     }
     
     with log_lock:
-        with open(audit_log_file, "a") as f:
+        with open(audit_log_file, "a", encoding="utf-8") as f:
             f.write(json.dumps(new_log) + "\n")
 
 # Computes the hash of a given (audit log) entry and the previous entry's hash
@@ -78,7 +78,7 @@ def verify_audit_log(log_file: str) -> dict:
     
     previous_hash = "0"
 
-    with open(log_file, "r") as f:
+    with open(log_file, "r", encoding="utf-8") as f:
         for line_number, line in enumerate(f, start=1):
             line = line.strip()
             if not line:

@@ -28,7 +28,7 @@ def write_json(filename: str, data: list):
 
     filepath = os.path.join("data", filename)
     
-    with open(filepath, "w") as file:
+    with open(filepath, "w", encoding="utf-8") as file:
         json.dump(data, file, indent=4)
 
 
