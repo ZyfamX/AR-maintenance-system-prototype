@@ -9,7 +9,7 @@ from typing import List
 from datetime import datetime
 # Import Pydantic schemas to validate data going out
 from schemas import FaultCreate, FaultUpdate, ToolScan, UserLogin, UserOut, FaultOut, ToolOut
-from security import verify_password, log_system_event
+from security import verify_password, log_system_event, verify_audit_log
 
 app = FastAPI(title="AR Maintenance System API")
 
@@ -191,6 +191,19 @@ def scan_tool_marker(payload: ToolScan):
             return tool
             
     raise HTTPException(status_code=404, detail="Tool marker not recognized in database")
+
+# Security route to verify integrity of the audit log
+@app.get("/api/audit/verify")
+def verify_logs():
+    result = verify_audit_log("data/audit.log")
+
+    if not result["valid"]:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Audit log compromised at line {result['line']}: {result['error']}"
+        )
+    
+    return {"status": "ok", "message": "Audit log integrity verified"}
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.get("/")

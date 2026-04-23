@@ -4,6 +4,7 @@ from passlib.context import CryptContext
 from threading import Lock
 import re
 from datetime import datetime, timedelta
+import hashlib
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -54,3 +55,77 @@ def log_system_event(user_id: int, action: str, details: str):
     with log_lock:
         with open(audit_log_file, "a") as f:
             f.write(json.dumps(new_log) + "\n")
+
+# Computes the hash of a given (audit log) entry and the previous entry's hash
+def compute_hash(entry: str, previous_hash: str) -> str:
+    return hashlib.sha256((entry + previous_hash).encode()).hexdigest()
+
+# Verifies the integrity of the audit log
+def verify_audit_log(log_file: str) -> dict:
+    """
+    Verifies the integrity of the audit log.
+
+    Returns:
+    {
+        "valid": bool,
+        "error": str | None,
+        "line": str | None
+    }
+    """
+
+    if not os.path.exists(log_file):
+        return {"valid": True, "error": None, "line": None}
+    
+    previous_hash = "0"
+
+    with open(log_file, "r") as f:
+        for line_number, line in enumerate(f, start=1):
+            line = line.strip()
+            if not line:
+                continue
+
+            try:
+                entry = json.loads(line)
+            except json.JSONDecodeError:
+                return {
+                    "valid": False,
+                    "error": "Invalid JSON",
+                    "line": line_number
+                }
+            
+            stored_hash = entry.get("hash")
+            stored_prev_hash = entry.get("prev_hash")
+
+            if stored_hash is None or stored_prev_hash is None:
+                return {
+                    "valid": False,
+                    "error": "Missing hash fields",
+                    "line": line_number
+                }
+            
+            if stored_prev_hash != previous_hash:
+                return {
+                    "valid": False,
+                    "error": f"Broken chain (prev_hash) mismatch. Expected {previous_hash}, got {stored_prev_hash}",
+                    "line": line_number
+                }
+            
+            base_entry = {
+                k: v for k, v in entry.items()
+                if k not in ("hash", "prev_hash")
+            }
+
+            entry_str = json.dumps(base_entry, sort_keys=True)
+
+            recomputed_hash = compute_hash(entry_str, previous_hash)
+
+            if recomputed_hash != stored_hash:
+                return {
+                    "valid": False,
+                    "error": "Hash mismatch (entry modified)",
+                    "line": line_number
+                }
+            
+            previous_hash = stored_hash
+
+    return {"valid": True, "error": None, "line": None}
