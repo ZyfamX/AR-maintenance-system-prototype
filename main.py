@@ -95,8 +95,11 @@ def login_user(credentials: UserLogin, response: Response):
     users = read_json("users.json")
     now = datetime.now(UTC)
 
+    user_found = False
+
     for user in users:
         if user["username"] == credentials.username:
+            user_found = True
             # Check if account locked
             if user["lock_until"]:
                 lock_time = datetime.fromisoformat(user["lock_until"])
@@ -145,7 +148,8 @@ def login_user(credentials: UserLogin, response: Response):
             break
 
     # Unknown username or failed login
-    log_system_event(None, "Unsuccessful_Login", f"Unknown username: {credentials.username}")
+    if not user_found:
+        log_system_event(None, "Unsuccessful_Login", f"Unknown username: {credentials.username}")
         
     raise HTTPException(status_code=401, detail="Invalid username or password")
 
