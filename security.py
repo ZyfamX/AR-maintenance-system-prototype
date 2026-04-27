@@ -44,6 +44,33 @@ def check_password_complexity(password: str) -> bool:
     
     return True
 
+# Computes the hash of a given (audit log) entry and the previous entry's hash
+def compute_hash(entry: str, previous_hash: str) -> str:
+    return hashlib.sha256((entry + previous_hash).encode()).hexdigest()
+
+def get_last_hash(log_file: str) -> str:
+    if not os.path.exists(audit_log_file):
+        return "0"
+    
+    with open(audit_log_file, "rb") as f:
+        try:
+            f.seek(-2, os.SEEK_END)
+            while f.read(1) != b"\n":
+                f.seek(-2, os.SEEK_CUR)
+        except OSError:
+            f.seek(0)
+
+        last_line = f.readline().decode("utf-8").strip()
+
+    if not last_line:
+        return "0"
+    
+    try:
+        entry = json.loads(last_line)
+        return entry.get("hash", "0")
+    except json.JSONDecodeError:
+        return "0"
+
 # Helper function to record system events for security and auditing purposes
 log_lock = Lock()
 
@@ -51,7 +78,7 @@ audit_log_file = os.path.join("data", "audit.log")
 
 def log_system_event(user_id: int | None, action: str, details: str):
     
-    new_log = {
+    base_entry = {
         "timestamp": datetime.now(UTC).isoformat() + "Z",
         "user_id": user_id,
         "action": action,
@@ -59,12 +86,20 @@ def log_system_event(user_id: int | None, action: str, details: str):
     }
     
     with log_lock:
-        with open(audit_log_file, "a", encoding="utf-8") as f:
-            f.write(json.dumps(new_log) + "\n")
+        prev_hash = get_last_hash(audit_log_file)
 
-# Computes the hash of a given (audit log) entry and the previous entry's hash
-def compute_hash(entry: str, previous_hash: str) -> str:
-    return hashlib.sha256((entry + previous_hash).encode()).hexdigest()
+        entry_str = json.dumps(base_entry, sort_keys=True)
+
+        current_hash = compute_hash(entry_str, prev_hash)
+
+        full_entry = {
+            **base_entry,
+            "prev_hash": prev_hash,
+            "hash": current_hash
+        }
+
+        with open(audit_log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(full_entry) + "\n")
 
 # Verifies the integrity of the audit log
 def verify_audit_log(log_file: str) -> dict:
