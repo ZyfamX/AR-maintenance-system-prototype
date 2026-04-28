@@ -39,9 +39,11 @@ async def auth_middleware(request: Request, call_next):
     public_paths = [
         "/api/login",
         "/health",
-        "/",
         "/static"
     ]
+
+    if request.url.path == "/" or request.url.path.startswith("/static"):
+        return await call_next(request)
 
     if any(request.url.path.startswith(path) for path in public_paths):
         return await call_next(request)
@@ -124,7 +126,7 @@ def login_user(credentials: UserLogin, response: Response):
                     key="session_id",
                     value=session_id,
                     httponly=True,
-                    secure=False,
+                    secure=False, #TODO: should be true for better security but may break some people's testing if they use HTTP
                     samesite="lax",
                     max_age=600
                 )
@@ -162,7 +164,9 @@ def logout(request: Request, response: Response):
 
     response.delete_cookie("session_id")
 
-    log_system_event(request.state.user_id, "Successful_Logout", "User successfully logged out.")
+    user_id = getattr(request.state, "uesr_id", None)
+
+    log_system_event(user_id, "Successful_Logout", "User successfully logged out.")
 
     return {"message": "Logged out successfully"}
 
@@ -211,7 +215,7 @@ def create_new_fault(payload: FaultCreate, request: Request):
 
     # Log the action for the audit trail
     log_system_event(
-        user_id=payload.reported_by_id, 
+        user_id=request.state.user_id, 
         action="FAULT_REPORTED", 
         details=f"New fault logged at {payload.location}: {payload.title}"
     )
@@ -251,7 +255,7 @@ def update_fault(fault_id: int, payload: FaultUpdate):
 # TOOL ROUTES ==============================================================================================================================
 # Handles the AR tool checkout/check-in logic automatically based on the current status
 @app.post("/api/tools/scan", response_model=ToolOut)
-def scan_tool_marker(payload: ToolScan):
+def scan_tool_marker(payload: ToolScan, request: Request):
 
     tools = read_json("tools.json")
     
@@ -263,18 +267,18 @@ def scan_tool_marker(payload: ToolScan):
             if tool["status"] == "Available":
 
                 tool["status"] = "Checked-Out"
-                tool["current_user_id"] = payload.user_id
+                tool["current_user_id"] = request.state.user_id
                 tool["checkout_timestamp"] = datetime.now(UTC).isoformat() + "Z"# WHAT IS GOING ON WITH THIS TIMESTAMP FORMAT
                 
                 # Log the tool checkout event
                 log_system_event(
-                    user_id=payload.user_id, 
+                    user_id=request.state.user_id, 
                     action="TOOL_CHECKOUT", 
                     details=f"Tool {tool['id']} checked out successfully."
                 )
 
             # Tool is checked out by THIS user: Check it back in
-            elif tool["status"] == "Checked-Out" and tool["current_user_id"] == payload.user_id:
+            elif tool["status"] == "Checked-Out" and tool["current_user_id"] == request.state.user_id:
 
                 tool["status"] = "Available"
                 tool["current_user_id"] = None
