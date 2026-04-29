@@ -223,28 +223,61 @@ def create_new_fault(payload: FaultCreate, request: Request):
     return new_fault
 
 
-# Allows Supervisor to Update Faults (Assign or Resolve) from dashboard
+# Allows Supervisor to Assign/Resolve, and Techs to add notes
 @app.patch("/api/faults/{fault_id}", response_model=FaultOut)
-def update_fault(fault_id: int, payload: FaultUpdate):
-
-    faults = read_json("faults.json")
+def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
     
+    faults = read_json("faults.json")
+    users = read_json("users.json")
+    
+    # 1. Fetch the current user's role from the database using their session ID
+    current_user = next((u for u in users if u["id"] == request.state.user_id), None)
+    
+    if not current_user:
+        raise HTTPException(status_code=401, detail="User not found")
+        
+    role = current_user.get("role")
+
     for fault in faults:
         if fault["id"] == fault_id:
             
-            # Update the fault with new assignment or resolution data
-            fault["status"] = payload.status
-            fault["assigned_to_id"] = payload.assigned_to_id
-            fault["resolved_by_id"] = payload.resolved_by_id
-            fault["resolution_notes"] = payload.resolution_notes
-            
+            # 2. RBAC ENFORCEMENT: TECHNICIAN RULES
+            if role == "Technician":
+                # Techs cannot resolve faults or assign users
+                if payload.status == "Resolved" or payload.assigned_to_id is not None:
+                    
+                    # Log the security violation!
+                    log_system_event(
+                        user_id=request.state.user_id, 
+                        action="UNAUTHORIZED_ACTION", 
+                        details=f"Technician attempted to resolve/assign fault {fault_id}."
+                    )
+                    raise HTTPException(status_code=403, detail="Technicians cannot assign or resolve faults. Supervisor approval required.")
+                
+                # Techs CAN update the notes for the supervisor to read
+                if payload.notes is not None:
+                    fault["notes"] = payload.notes
+                    fault["status"] = payload.status # e.g., keeping it as "Assigned"
+
+            # 3. RBAC ENFORCEMENT: SUPERVISOR RULES
+            elif role in ["Supervisor", "Administrator"]:
+                fault["status"] = payload.status
+                
+                if payload.assigned_to_id is not None:
+                    fault["assigned_to_id"] = payload.assigned_to_id
+                if payload.resolved_by_id is not None:
+                    fault["resolved_by_id"] = payload.resolved_by_id
+                if payload.notes is not None:
+                    fault["notes"] = payload.notes
+
+            # 4. Save to database
             write_json("faults.json", faults)
 
-            # Log the update for the audit trail
+            # 5. Log the successful update
             log_system_event(
-                user_id=payload.resolved_by_id or payload.assigned_to_id, 
-                action=f"FAULT_UPDATED_{payload.status.upper()}", 
-                details=f"Fault {fault_id} status changed to {payload.status}."
+                user_id=request.state.user_id, 
+                action=f"FAULT_UPDATED", 
+                details=f"Fault {fault_id} updated by {role}."
             )
 
             return fault
@@ -252,25 +285,32 @@ def update_fault(fault_id: int, payload: FaultUpdate):
     raise HTTPException(status_code=404, detail="Fault ID not found")
 
 
-# TOOL ROUTES ==============================================================================================================================
+# TOOL ROUTES ==========================================================================================================
+
+# Pure GET route: AR app uses this just to "look" at the tool and render the 3D overlay
+@app.get("/api/tools/marker/{marker_id}", response_model=ToolOut)
+def get_tool_by_marker(marker_id: str):
+    tools = read_json("tools.json")
+    for tool in tools:
+        if tool["marker_id"] == marker_id:
+            return tool
+    raise HTTPException(status_code=404, detail="Tool marker not recognized in database")
+
+
 # Handles the AR tool checkout/check-in logic automatically based on the current status
 @app.post("/api/tools/scan", response_model=ToolOut)
 def scan_tool_marker(payload: ToolScan, request: Request):
-
     tools = read_json("tools.json")
     
     for tool in tools:
-
         if tool["marker_id"] == payload.marker_id:
             
             # Tool is available: Check it out
             if tool["status"] == "Available":
-
                 tool["status"] = "Checked-Out"
                 tool["current_user_id"] = request.state.user_id
-                tool["checkout_timestamp"] = datetime.now(UTC).isoformat() + "Z"# WHAT IS GOING ON WITH THIS TIMESTAMP FORMAT
+                tool["checkout_timestamp"] = datetime.now(UTC).isoformat() + "Z"
                 
-                # Log the tool checkout event
                 log_system_event(
                     user_id=request.state.user_id, 
                     action="TOOL_CHECKOUT", 
@@ -279,15 +319,20 @@ def scan_tool_marker(payload: ToolScan, request: Request):
 
             # Tool is checked out by THIS user: Check it back in
             elif tool["status"] == "Checked-Out" and tool["current_user_id"] == request.state.user_id:
-
                 tool["status"] = "Available"
                 tool["current_user_id"] = None
                 tool["checkout_timestamp"] = None
                 
+                # ADDED MISSING AUDIT LOG
+                log_system_event(
+                    user_id=request.state.user_id, 
+                    action="TOOL_CHECKIN", 
+                    details=f"Tool {tool['id']} checked back in."
+                )
+                
             # Tool is checked out by SOMEONE ELSE: No Access
             else:
                 raise HTTPException(status_code=403, detail="Tool is currently checked out by another user!")
-                
 
             write_json("tools.json", tools)
             return tool
