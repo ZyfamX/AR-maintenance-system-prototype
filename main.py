@@ -73,18 +73,44 @@ def health_check():
     return {"status": "ok", "message": "Server is running"}
 
 
-# Returns a list of all faults from the JSON database
+# Returns active faults, filtered securely by Role
 @app.get("/api/faults", response_model=List[FaultOut])
-def get_active_faults():
+def get_active_faults(request: Request):
     faults = read_json("faults.json")
-    return faults
+    users = read_json("users.json")
+    
+    # Identify the user
+    current_user = next((u for u in users if u["id"] == request.state.user_id), None)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="User not found")
+        
+    # Supervisors see everything
+    if current_user["role"] in ["Supervisor", "Administrator"]:
+        return faults
+        
+    # Technicians only see faults they are assigned to, or faults they reported
+    technician_faults = [
+        f for f in faults 
+        if f.get("assigned_to_id") == request.state.user_id 
+        or f.get("reported_by_id") == request.state.user_id
+    ]
+    return technician_faults
 
 
-# Returns a list of all tools from the JSON database
+# Returns tool status, filtered securely by Role
 @app.get("/api/tools", response_model=List[ToolOut])
-def get_all_tools():
+def get_all_tools(request: Request):
     tools = read_json("tools.json")
-    return tools
+    users = read_json("users.json")
+    
+    current_user = next((u for u in users if u["id"] == request.state.user_id), None)
+    
+    if current_user and current_user["role"] in ["Supervisor", "Administrator"]:
+        return tools
+        
+    # Technicians only see tools they currently have checked out
+    technician_tools = [t for t in tools if t.get("current_user_id") == request.state.user_id]
+    return technician_tools
 
 
 # USER ROUTE ==============================================================================================================================
