@@ -14,6 +14,8 @@ from sessions import generate_session, validate_session, update_expiry, remove_s
 
 app = FastAPI(title="AR Maintenance System API")
 
+
+
 # Reads data from a JSON file in the data/ directory
 def read_json(filename: str):
 
@@ -90,6 +92,7 @@ def get_all_tools():
 # Defines failed login attempt lock config according to requirement F8
 lock_threshold = 5
 lock_duration_minutes = 10
+fault_submission_timestamps = {} # Stores {user_id: datetime}
 
 @app.post("/api/login", response_model=UserOut)
 def login_user(credentials: UserLogin, response: Response):
@@ -155,18 +158,43 @@ def login_user(credentials: UserLogin, response: Response):
         
     raise HTTPException(status_code=401, detail="Invalid username or password")
 
+# Logs out the user, with a safety check for unreturned tools (Requirement F24)
 @app.post("/api/logout")
-def logout(request: Request, response: Response):
+def logout(request: Request, response: Response, force: bool = False):
     session_id = request.cookies.get("session_id")
 
-    if session_id:
-        remove_session(session_id)
+    if not session_id:
+        return {"message": "Already logged out"}
 
+    # 1. We need the user_id to check their tools before we destroy the session
+    session_data = validate_session(session_id)
+    user_id = session_data.get("user_id")
+
+    if user_id and not force:
+        # --- REQUIREMENT F24 (Tool Check) ---
+        tools = read_json("tools.json")
+        
+        # Find all tools currently checked out by this user
+        unreturned_tools = [t for t in tools if t.get("current_user_id") == user_id]
+        
+        if unreturned_tools:
+            # Tell the frontend to halt and show the warning prompt
+            tool_ids = ", ".join([str(t["id"]) for t in unreturned_tools])
+            raise HTTPException(
+                status_code=409, # 409 Conflict indicates a logic state issue
+                detail=f"WARNING_UNRETURNED_TOOLS:{tool_ids}" 
+            )
+
+    # 2. Proceed with actual logout (either no tools, or force=True)
+    remove_session(session_id)
     response.delete_cookie("session_id")
 
-    user_id = getattr(request.state, "uesr_id", None)
-
-    log_system_event(user_id, "Successful_Logout", "User successfully logged out.")
+    if user_id:
+        log_system_event(
+            user_id=user_id, 
+            action="SUCCESSFUL_LOGOUT", 
+            details=f"User logged out. Forced: {force}"
+        )
 
     return {"message": "Logged out successfully"}
 
@@ -190,7 +218,32 @@ def get_fault_by_marker(marker_id: str):
 # Creates new fault record
 @app.post("/api/faults", response_model=FaultOut, status_code=201)
 def create_new_fault(payload: FaultCreate, request: Request):
+    
+    user_id = request.state.user_id
+    now = datetime.now(UTC)
 
+    # --- 1. RATE LIMITING LOGIC (Requirement F5) ---
+    last_submission = fault_submission_timestamps.get(user_id)
+    
+    if last_submission:
+        time_since_last = (now - last_submission).total_seconds()
+        if time_since_last < 5.0:
+            # Log the spam attempt
+            log_system_event(
+                user_id=user_id, 
+                action="RATE_LIMIT_EXCEEDED", 
+                details="User attempted to submit multiple faults within 5 seconds."
+            )
+            raise HTTPException(
+                status_code=429, # Standard HTTP code for "Too Many Requests"
+                detail=f"Please wait {5 - int(time_since_last)} seconds before submitting another fault."
+            )
+            
+    # Update the user's last submission time to RIGHT NOW
+    fault_submission_timestamps[user_id] = now
+    # -----------------------------------------------
+
+    # 2. Proceed with normal fault creation
     faults = read_json("faults.json")
     
     # Create new ID (highest ID + 1)
@@ -203,8 +256,8 @@ def create_new_fault(payload: FaultCreate, request: Request):
         "description": payload.description,
         "location": payload.location,
         "status": "Active",
-        "reported_by_id": request.state.user_id,
-        "timestamp": datetime.now(UTC).isoformat() + "Z", # Standardized UTC format
+        "reported_by_id": user_id,
+        "timestamp": now.isoformat() + "Z", # Standardized UTC format
         "assigned_to_id": None,      
         "resolved_by_id": None,
         "notes": None
@@ -213,9 +266,9 @@ def create_new_fault(payload: FaultCreate, request: Request):
     faults.append(new_fault)
     write_json("faults.json", faults)
 
-    # Log the action for the audit trail
+    # Log the successful action for the audit trail
     log_system_event(
-        user_id=request.state.user_id, 
+        user_id=user_id, 
         action="FAULT_REPORTED", 
         details=f"New fault logged at {payload.location}: {payload.title}"
     )
@@ -223,28 +276,61 @@ def create_new_fault(payload: FaultCreate, request: Request):
     return new_fault
 
 
-# Allows Supervisor to Update Faults (Assign or Resolve) from dashboard
+# Allows Supervisor to Assign/Resolve, and Techs to add notes
 @app.patch("/api/faults/{fault_id}", response_model=FaultOut)
-def update_fault(fault_id: int, payload: FaultUpdate):
-
-    faults = read_json("faults.json")
+def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
     
+    faults = read_json("faults.json")
+    users = read_json("users.json")
+    
+    # 1. Fetch the current user's role from the database using their session ID
+    current_user = next((u for u in users if u["id"] == request.state.user_id), None)
+    
+    if not current_user:
+        raise HTTPException(status_code=401, detail="User not found")
+        
+    role = current_user.get("role")
+
     for fault in faults:
         if fault["id"] == fault_id:
             
-            # Update the fault with new assignment or resolution data
-            fault["status"] = payload.status
-            fault["assigned_to_id"] = payload.assigned_to_id
-            fault["resolved_by_id"] = payload.resolved_by_id
-            fault["resolution_notes"] = payload.resolution_notes
-            
+            # 2. RBAC ENFORCEMENT: TECHNICIAN RULES
+            if role == "Technician":
+                # Techs cannot resolve faults or assign users
+                if payload.status == "Resolved" or payload.assigned_to_id is not None:
+                    
+                    # Log the security violation!
+                    log_system_event(
+                        user_id=request.state.user_id, 
+                        action="UNAUTHORIZED_ACTION", 
+                        details=f"Technician attempted to resolve/assign fault {fault_id}."
+                    )
+                    raise HTTPException(status_code=403, detail="Technicians cannot assign or resolve faults. Supervisor approval required.")
+                
+                # Techs CAN update the notes for the supervisor to read
+                if payload.notes is not None:
+                    fault["notes"] = payload.notes
+                    fault["status"] = payload.status # e.g., keeping it as "Assigned"
+
+            # 3. RBAC ENFORCEMENT: SUPERVISOR RULES
+            elif role in ["Supervisor", "Administrator"]:
+                fault["status"] = payload.status
+                
+                if payload.assigned_to_id is not None:
+                    fault["assigned_to_id"] = payload.assigned_to_id
+                if payload.resolved_by_id is not None:
+                    fault["resolved_by_id"] = payload.resolved_by_id
+                if payload.notes is not None:
+                    fault["notes"] = payload.notes
+
+            # 4. Save to database
             write_json("faults.json", faults)
 
-            # Log the update for the audit trail
+            # 5. Log the successful update
             log_system_event(
-                user_id=payload.resolved_by_id or payload.assigned_to_id, 
-                action=f"FAULT_UPDATED_{payload.status.upper()}", 
-                details=f"Fault {fault_id} status changed to {payload.status}."
+                user_id=request.state.user_id, 
+                action=f"FAULT_UPDATED", 
+                details=f"Fault {fault_id} updated by {role}."
             )
 
             return fault
@@ -252,25 +338,82 @@ def update_fault(fault_id: int, payload: FaultUpdate):
     raise HTTPException(status_code=404, detail="Fault ID not found")
 
 
-# TOOL ROUTES ==============================================================================================================================
+
+# Deletes a fault record (Supervisor only) - Requirement F28
+@app.delete("/api/faults/{fault_id}")
+def delete_fault(fault_id: int, request: Request):
+    
+    users = read_json("users.json")
+    faults = read_json("faults.json")
+
+    # 1. Fetch the current user's role
+    current_user = next((u for u in users if u["id"] == request.state.user_id), None)
+    
+    if not current_user:
+        raise HTTPException(status_code=401, detail="User not found")
+        
+    role = current_user.get("role")
+
+    # 2. RBAC ENFORCEMENT: ONLY SUPERVISORS CAN DELETE
+    if role not in ["Supervisor", "Administrator"]:
+        
+        # Log the security violation!
+        log_system_event(
+            user_id=request.state.user_id, 
+            action="UNAUTHORIZED_DELETE_ATTEMPT", 
+            details=f"Technician attempted to delete fault {fault_id}."
+        )
+        raise HTTPException(status_code=403, detail="Only Supervisors can delete faults.")
+
+    # 3. Find and remove the fault
+    fault_to_delete = None
+    for i, fault in enumerate(faults):
+        if fault["id"] == fault_id:
+            fault_to_delete = faults.pop(i) # Removes the item from the list
+            break
+
+    if not fault_to_delete:
+        raise HTTPException(status_code=404, detail="Fault ID not found")
+
+    # 4. Save the updated database
+    write_json("faults.json", faults)
+
+    # 5. Log the deletion to the audit trail
+    log_system_event(
+        user_id=request.state.user_id, 
+        action="FAULT_DELETED", 
+        details=f"Fault {fault_id} ('{fault_to_delete['title']}') deleted by {role}."
+    )
+
+    return {"message": f"Fault {fault_id} successfully deleted."}
+
+
+# TOOL ROUTES ==========================================================================================================
+
+# Pure GET route: AR app uses this just to "look" at the tool and render the 3D overlay
+@app.get("/api/tools/marker/{marker_id}", response_model=ToolOut)
+def get_tool_by_marker(marker_id: str):
+    tools = read_json("tools.json")
+    for tool in tools:
+        if tool["marker_id"] == marker_id:
+            return tool
+    raise HTTPException(status_code=404, detail="Tool marker not recognized in database")
+
+
 # Handles the AR tool checkout/check-in logic automatically based on the current status
 @app.post("/api/tools/scan", response_model=ToolOut)
 def scan_tool_marker(payload: ToolScan, request: Request):
-
     tools = read_json("tools.json")
     
     for tool in tools:
-
         if tool["marker_id"] == payload.marker_id:
             
             # Tool is available: Check it out
             if tool["status"] == "Available":
-
                 tool["status"] = "Checked-Out"
                 tool["current_user_id"] = request.state.user_id
-                tool["checkout_timestamp"] = datetime.now(UTC).isoformat() + "Z"# WHAT IS GOING ON WITH THIS TIMESTAMP FORMAT
+                tool["checkout_timestamp"] = datetime.now(UTC).isoformat() + "Z"
                 
-                # Log the tool checkout event
                 log_system_event(
                     user_id=request.state.user_id, 
                     action="TOOL_CHECKOUT", 
@@ -279,15 +422,20 @@ def scan_tool_marker(payload: ToolScan, request: Request):
 
             # Tool is checked out by THIS user: Check it back in
             elif tool["status"] == "Checked-Out" and tool["current_user_id"] == request.state.user_id:
-
                 tool["status"] = "Available"
                 tool["current_user_id"] = None
                 tool["checkout_timestamp"] = None
                 
+                # ADDED MISSING AUDIT LOG
+                log_system_event(
+                    user_id=request.state.user_id, 
+                    action="TOOL_CHECKIN", 
+                    details=f"Tool {tool['id']} checked back in."
+                )
+                
             # Tool is checked out by SOMEONE ELSE: No Access
             else:
                 raise HTTPException(status_code=403, detail="Tool is currently checked out by another user!")
-                
 
             write_json("tools.json", tools)
             return tool

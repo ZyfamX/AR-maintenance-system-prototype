@@ -27,7 +27,6 @@ class FaultCreate(BaseModel):
     title: str = Field(min_length=5, max_length=100)
     description: str = Field(min_length=10, max_length=500)
     location: str = Field(min_length=3, max_length=100)
-    reported_by_id: int # Reference to the user ID who reported the fault
 
 
 # What the Supervisor dashboard sends to assign OR resolve a fault
