@@ -338,6 +338,56 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
     raise HTTPException(status_code=404, detail="Fault ID not found")
 
 
+
+# Deletes a fault record (Supervisor only) - Requirement F28
+@app.delete("/api/faults/{fault_id}")
+def delete_fault(fault_id: int, request: Request):
+    
+    users = read_json("users.json")
+    faults = read_json("faults.json")
+
+    # 1. Fetch the current user's role
+    current_user = next((u for u in users if u["id"] == request.state.user_id), None)
+    
+    if not current_user:
+        raise HTTPException(status_code=401, detail="User not found")
+        
+    role = current_user.get("role")
+
+    # 2. RBAC ENFORCEMENT: ONLY SUPERVISORS CAN DELETE
+    if role not in ["Supervisor", "Administrator"]:
+        
+        # Log the security violation!
+        log_system_event(
+            user_id=request.state.user_id, 
+            action="UNAUTHORIZED_DELETE_ATTEMPT", 
+            details=f"Technician attempted to delete fault {fault_id}."
+        )
+        raise HTTPException(status_code=403, detail="Only Supervisors can delete faults.")
+
+    # 3. Find and remove the fault
+    fault_to_delete = None
+    for i, fault in enumerate(faults):
+        if fault["id"] == fault_id:
+            fault_to_delete = faults.pop(i) # Removes the item from the list
+            break
+
+    if not fault_to_delete:
+        raise HTTPException(status_code=404, detail="Fault ID not found")
+
+    # 4. Save the updated database
+    write_json("faults.json", faults)
+
+    # 5. Log the deletion to the audit trail
+    log_system_event(
+        user_id=request.state.user_id, 
+        action="FAULT_DELETED", 
+        details=f"Fault {fault_id} ('{fault_to_delete['title']}') deleted by {role}."
+    )
+
+    return {"message": f"Fault {fault_id} successfully deleted."}
+
+
 # TOOL ROUTES ==========================================================================================================
 
 # Pure GET route: AR app uses this just to "look" at the tool and render the 3D overlay
