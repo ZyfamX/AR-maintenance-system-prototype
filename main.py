@@ -14,6 +14,8 @@ from sessions import generate_session, validate_session, update_expiry, remove_s
 
 app = FastAPI(title="AR Maintenance System API")
 
+
+
 # Reads data from a JSON file in the data/ directory
 def read_json(filename: str):
 
@@ -90,6 +92,7 @@ def get_all_tools():
 # Defines failed login attempt lock config according to requirement F8
 lock_threshold = 5
 lock_duration_minutes = 10
+fault_submission_timestamps = {} # Stores {user_id: datetime}
 
 @app.post("/api/login", response_model=UserOut)
 def login_user(credentials: UserLogin, response: Response):
@@ -190,7 +193,32 @@ def get_fault_by_marker(marker_id: str):
 # Creates new fault record
 @app.post("/api/faults", response_model=FaultOut, status_code=201)
 def create_new_fault(payload: FaultCreate, request: Request):
+    
+    user_id = request.state.user_id
+    now = datetime.now(UTC)
 
+    # --- 1. RATE LIMITING LOGIC (Requirement F5) ---
+    last_submission = fault_submission_timestamps.get(user_id)
+    
+    if last_submission:
+        time_since_last = (now - last_submission).total_seconds()
+        if time_since_last < 5.0:
+            # Log the spam attempt
+            log_system_event(
+                user_id=user_id, 
+                action="RATE_LIMIT_EXCEEDED", 
+                details="User attempted to submit multiple faults within 5 seconds."
+            )
+            raise HTTPException(
+                status_code=429, # Standard HTTP code for "Too Many Requests"
+                detail=f"Please wait {5 - int(time_since_last)} seconds before submitting another fault."
+            )
+            
+    # Update the user's last submission time to RIGHT NOW
+    fault_submission_timestamps[user_id] = now
+    # -----------------------------------------------
+
+    # 2. Proceed with normal fault creation
     faults = read_json("faults.json")
     
     # Create new ID (highest ID + 1)
@@ -203,8 +231,8 @@ def create_new_fault(payload: FaultCreate, request: Request):
         "description": payload.description,
         "location": payload.location,
         "status": "Active",
-        "reported_by_id": request.state.user_id,
-        "timestamp": datetime.now(UTC).isoformat() + "Z", # Standardized UTC format
+        "reported_by_id": user_id,
+        "timestamp": now.isoformat() + "Z", # Standardized UTC format
         "assigned_to_id": None,      
         "resolved_by_id": None,
         "notes": None
@@ -213,9 +241,9 @@ def create_new_fault(payload: FaultCreate, request: Request):
     faults.append(new_fault)
     write_json("faults.json", faults)
 
-    # Log the action for the audit trail
+    # Log the successful action for the audit trail
     log_system_event(
-        user_id=request.state.user_id, 
+        user_id=user_id, 
         action="FAULT_REPORTED", 
         details=f"New fault logged at {payload.location}: {payload.title}"
     )
