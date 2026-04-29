@@ -158,18 +158,43 @@ def login_user(credentials: UserLogin, response: Response):
         
     raise HTTPException(status_code=401, detail="Invalid username or password")
 
+# Logs out the user, with a safety check for unreturned tools (Requirement F24)
 @app.post("/api/logout")
-def logout(request: Request, response: Response):
+def logout(request: Request, response: Response, force: bool = False):
     session_id = request.cookies.get("session_id")
 
-    if session_id:
-        remove_session(session_id)
+    if not session_id:
+        return {"message": "Already logged out"}
 
+    # 1. We need the user_id to check their tools before we destroy the session
+    session_data = validate_session(session_id)
+    user_id = session_data.get("user_id")
+
+    if user_id and not force:
+        # --- REQUIREMENT F24 (Tool Check) ---
+        tools = read_json("tools.json")
+        
+        # Find all tools currently checked out by this user
+        unreturned_tools = [t for t in tools if t.get("current_user_id") == user_id]
+        
+        if unreturned_tools:
+            # Tell the frontend to halt and show the warning prompt
+            tool_ids = ", ".join([str(t["id"]) for t in unreturned_tools])
+            raise HTTPException(
+                status_code=409, # 409 Conflict indicates a logic state issue
+                detail=f"WARNING_UNRETURNED_TOOLS:{tool_ids}" 
+            )
+
+    # 2. Proceed with actual logout (either no tools, or force=True)
+    remove_session(session_id)
     response.delete_cookie("session_id")
 
-    user_id = getattr(request.state, "uesr_id", None)
-
-    log_system_event(user_id, "Successful_Logout", "User successfully logged out.")
+    if user_id:
+        log_system_event(
+            user_id=user_id, 
+            action="SUCCESSFUL_LOGOUT", 
+            details=f"User logged out. Forced: {force}"
+        )
 
     return {"message": "Logged out successfully"}
 
