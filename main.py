@@ -1,19 +1,18 @@
-# FastAPI routing, app setup, and mounting the static folder
-
 import json
 import os
+
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
+
 from typing import List
 from datetime import datetime, timedelta, UTC
-# Import Pydantic schemas to validate data going out
 from schemas import FaultCreate, FaultUpdate, ToolScan, UserLogin, UserOut, FaultOut, ToolOut
 from security import verify_password, log_system_event, verify_audit_log
 from sessions import generate_session, validate_session, update_expiry, remove_session
 
-app = FastAPI(title="AR Maintenance System API")
 
+app = FastAPI(title="AR Maintenance System API")
 
 
 # Reads data from a JSON file in the data/ directory
@@ -37,6 +36,7 @@ def write_json(filename: str, data: list):
 # Middleware for session authentication
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
+
     # Routes that do NOT require authentication
     public_paths = [
         "/api/login",
@@ -76,11 +76,13 @@ def health_check():
 # Returns active faults, filtered securely by Role
 @app.get("/api/faults", response_model=List[FaultOut])
 def get_active_faults(request: Request):
+
     faults = read_json("faults.json")
     users = read_json("users.json")
     
     # Identify the user
     current_user = next((u for u in users if u["id"] == request.state.user_id), None)
+
     if not current_user:
         raise HTTPException(status_code=401, detail="User not found")
         
@@ -94,12 +96,14 @@ def get_active_faults(request: Request):
         if f.get("assigned_to_id") == request.state.user_id 
         or f.get("reported_by_id") == request.state.user_id
     ]
+
     return technician_faults
 
 
 # Returns tool status, filtered securely by Role
 @app.get("/api/tools", response_model=List[ToolOut])
 def get_all_tools(request: Request):
+
     tools = read_json("tools.json")
     users = read_json("users.json")
     
@@ -110,12 +114,13 @@ def get_all_tools(request: Request):
         
     # Technicians only see tools they currently have checked out
     technician_tools = [t for t in tools if t.get("current_user_id") == request.state.user_id]
+
     return technician_tools
 
 
 # USER ROUTE ==============================================================================================================================
 
-# Defines failed login attempt lock config according to requirement F8
+# Failed login attempt lock config according to requirement F8
 lock_threshold = 5
 lock_duration_minutes = 10
 fault_submission_timestamps = {} # Stores {user_id: datetime}
@@ -129,21 +134,29 @@ def login_user(credentials: UserLogin, response: Response):
     user_found = False
 
     for user in users:
+
         if user["username"] == credentials.username:
+
             user_found = True
+
             # Check if account locked
             if user["lock_until"]:
+
                 lock_time = datetime.fromisoformat(user["lock_until"])
 
                 if now < lock_time:
+
                     log_system_event(user["id"], "Blocked_Login", "Attempt to log in to locked account.")
                     raise HTTPException(status_code=403, detail="Account temporarily locked")
+                
                 else:
+
                     user["lock_until"] = None
                     user["failed_attempts"] = 0
 
             # Check password
             if verify_password(credentials.password, user["password_hash"]):
+
                 user["lock_until"] = None
                 user["failed_attempts"] = 0
 
@@ -168,14 +181,17 @@ def login_user(credentials: UserLogin, response: Response):
             user["failed_attempts"] += 1
 
             if user["failed_attempts"] >= lock_threshold:
+
                 user["lock_until"] = (now + timedelta(minutes=lock_duration_minutes)).isoformat()
                 user["failed_attempts"] = 0
 
                 log_system_event(user["id"], "Account_Locked", f"Too many failed login attempts.")
+
             else:
                 log_system_event(user["id"], "Unsuccessful_Login", f"Wrong password entered for user {user["username"]}.")
             
             write_json("users.json", users)
+
             break
 
     # Unknown username or failed login
@@ -187,6 +203,7 @@ def login_user(credentials: UserLogin, response: Response):
 # Logs out the user, with a safety check for unreturned tools (Requirement F24)
 @app.post("/api/logout")
 def logout(request: Request, response: Response, force: bool = False):
+
     session_id = request.cookies.get("session_id")
 
     if not session_id:
@@ -197,6 +214,7 @@ def logout(request: Request, response: Response, force: bool = False):
     user_id = session_data.get("user_id")
 
     if user_id and not force:
+
         # --- REQUIREMENT F24 (Tool Check) ---
         tools = read_json("tools.json")
         
@@ -204,8 +222,10 @@ def logout(request: Request, response: Response, force: bool = False):
         unreturned_tools = [t for t in tools if t.get("current_user_id") == user_id]
         
         if unreturned_tools:
+
             # Tell the frontend to halt and show the warning prompt
             tool_ids = ", ".join([str(t["id"]) for t in unreturned_tools])
+
             raise HTTPException(
                 status_code=409, # 409 Conflict indicates a logic state issue
                 detail=f"WARNING_UNRETURNED_TOOLS:{tool_ids}" 
@@ -216,6 +236,7 @@ def logout(request: Request, response: Response, force: bool = False):
     response.delete_cookie("session_id")
 
     if user_id:
+
         log_system_event(
             user_id=user_id, 
             action="SUCCESSFUL_LOGOUT", 
@@ -252,8 +273,11 @@ def create_new_fault(payload: FaultCreate, request: Request):
     last_submission = fault_submission_timestamps.get(user_id)
     
     if last_submission:
+
         time_since_last = (now - last_submission).total_seconds()
+
         if time_since_last < 5.0:
+
             # Log the spam attempt
             log_system_event(
                 user_id=user_id, 
@@ -264,6 +288,7 @@ def create_new_fault(payload: FaultCreate, request: Request):
                 status_code=429, # Standard HTTP code for "Too Many Requests"
                 detail=f"Please wait {5 - int(time_since_last)} seconds before submitting another fault."
             )
+        
             
     # Update the user's last submission time to RIGHT NOW
     fault_submission_timestamps[user_id] = now
@@ -318,10 +343,12 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
     role = current_user.get("role")
 
     for fault in faults:
+
         if fault["id"] == fault_id:
             
             # 2. RBAC ENFORCEMENT: TECHNICIAN RULES
             if role == "Technician":
+
                 # Techs cannot resolve faults or assign users
                 if payload.status == "Resolved" or payload.assigned_to_id is not None:
                     
@@ -340,6 +367,7 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
 
             # 3. RBAC ENFORCEMENT: SUPERVISOR RULES
             elif role in ["Supervisor", "Administrator"]:
+
                 fault["status"] = payload.status
                 
                 if payload.assigned_to_id is not None:
@@ -360,6 +388,7 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
             )
 
             return fault
+        
             
     raise HTTPException(status_code=404, detail="Fault ID not found")
 
@@ -393,13 +422,17 @@ def delete_fault(fault_id: int, request: Request):
 
     # 3. Find and remove the fault
     fault_to_delete = None
+
     for i, fault in enumerate(faults):
+        
         if fault["id"] == fault_id:
             fault_to_delete = faults.pop(i) # Removes the item from the list
             break
 
+
     if not fault_to_delete:
         raise HTTPException(status_code=404, detail="Fault ID not found")
+
 
     # 4. Save the updated database
     write_json("faults.json", faults)
@@ -419,11 +452,15 @@ def delete_fault(fault_id: int, request: Request):
 # Pure GET route: AR app uses this just to "look" at the tool and render the 3D overlay
 @app.get("/api/tools/marker/{marker_id}", response_model=ToolOut)
 def get_tool_by_marker(marker_id: str):
+
     tools = read_json("tools.json")
+
     for tool in tools:
+
         if tool["marker_id"] == marker_id:
             return tool
     raise HTTPException(status_code=404, detail="Tool marker not recognized in database")
+
 
 
 # Handles the AR tool checkout/check-in logic automatically based on the current status
@@ -432,6 +469,7 @@ def scan_tool_marker(payload: ToolScan, request: Request):
     tools = read_json("tools.json")
     
     for tool in tools:
+
         if tool["marker_id"] == payload.marker_id:
             
             # Tool is available: Check it out
@@ -448,6 +486,7 @@ def scan_tool_marker(payload: ToolScan, request: Request):
 
             # Tool is checked out by THIS user: Check it back in
             elif tool["status"] == "Checked-Out" and tool["current_user_id"] == request.state.user_id:
+
                 tool["status"] = "Available"
                 tool["current_user_id"] = None
                 tool["checkout_timestamp"] = None
@@ -465,21 +504,27 @@ def scan_tool_marker(payload: ToolScan, request: Request):
 
             write_json("tools.json", tools)
             return tool
+        
             
     raise HTTPException(status_code=404, detail="Tool marker not recognized in database")
 
 # Security route to verify integrity of the audit log
 @app.get("/api/audit/verify")
 def verify_logs():
+
     result = verify_audit_log("data/audit.log")
 
     if not result["valid"]:
+
         raise HTTPException(
             status_code=500,
             detail=f"Audit log compromised at line {result['line']}: {result['error']}"
         )
     
+    
     return {"status": "ok", "message": "Audit log integrity verified"}
+
+
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.get("/")

@@ -14,6 +14,7 @@ pwd_min_special_chars = 1
 
 # Checks if the password matches the hash (Requirement F1)
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+
     password_bytes = plain_password.encode("utf-8")
     hash_bytes = hashed_password.encode("utf-8")
 
@@ -21,9 +22,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 # Encrypts the password before saving to JSON (Requirement F6)
 def hash_password(password: str) -> str:
+
     password_bytes = password.encode("utf-8")[:72]
     salt = bcrypt.gensalt()
     hashed = bcrypt.hashpw(password_bytes, salt)
+
     return hashed.decode("utf-8")
 
 # Test passwords
@@ -49,10 +52,12 @@ def compute_hash(entry: str, previous_hash: str) -> str:
     return hashlib.sha256((entry + previous_hash).encode()).hexdigest()
 
 def get_last_hash(log_file: str) -> str:
+
     if not os.path.exists(audit_log_file):
         return "0"
     
     with open(audit_log_file, "rb") as f:
+        
         try:
             f.seek(-2, os.SEEK_END)
             while f.read(1) != b"\n":
@@ -86,6 +91,7 @@ def log_system_event(user_id: int | None, action: str, details: str):
     }
     
     with log_lock:
+
         prev_hash = get_last_hash(audit_log_file)
 
         entry_str = json.dumps(base_entry, sort_keys=True)
@@ -100,9 +106,12 @@ def log_system_event(user_id: int | None, action: str, details: str):
 
         with open(audit_log_file, "a", encoding="utf-8") as f:
             f.write(json.dumps(full_entry) + "\n")
+            
+
 
 # Verifies the integrity of the audit log
 def verify_audit_log(log_file: str) -> dict:
+
     """
     Verifies the integrity of the audit log.
 
@@ -120,8 +129,11 @@ def verify_audit_log(log_file: str) -> dict:
     previous_hash = "0"
 
     with open(log_file, "r", encoding="utf-8") as f:
+
         for line_number, line in enumerate(f, start=1):
+
             line = line.strip()
+
             if not line:
                 continue
 
@@ -138,18 +150,22 @@ def verify_audit_log(log_file: str) -> dict:
             stored_prev_hash = entry.get("prev_hash")
 
             if stored_hash is None or stored_prev_hash is None:
+
                 return {
                     "valid": False,
                     "error": "Missing hash fields",
                     "line": line_number
                 }
             
+
             if stored_prev_hash != previous_hash:
+
                 return {
                     "valid": False,
                     "error": f"Broken chain (prev_hash) mismatch. Expected {previous_hash}, got {stored_prev_hash}",
                     "line": line_number
                 }
+            
             
             base_entry = {
                 k: v for k, v in entry.items()
@@ -161,12 +177,16 @@ def verify_audit_log(log_file: str) -> dict:
             recomputed_hash = compute_hash(entry_str, previous_hash)
 
             if recomputed_hash != stored_hash:
+
                 return {
                     "valid": False,
                     "error": "Hash mismatch (entry modified)",
                     "line": line_number
                 }
             
+            
             previous_hash = stored_hash
+
+    
 
     return {"valid": True, "error": None, "line": None}
