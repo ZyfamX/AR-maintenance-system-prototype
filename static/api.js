@@ -34,9 +34,10 @@ export async function login(username, password) {
     return request("POST", "/login", { username, password });
 }
 
-// POST /api/logout — clears session cookie server-side
-export async function logout() {
-    return request("POST", "/logout");
+// POST /api/logout — clears session cookie server-side (supports forced logout)
+export async function logout(force = false) {
+    const query = force ? "?force=true" : "";
+    return request("POST", `/logout${query}`);
 }
 
 
@@ -63,6 +64,11 @@ export async function createFault(payload) {
 // payload: { status, assigned_to_id?, resolved_by_id?, notes? }
 export async function updateFault(faultId, payload) {
     return request("PATCH", `/faults/${faultId}`, payload);
+}
+
+// DELETE /api/faults/:faultId — deletes a fault (Supervisor only)
+export async function deleteFault(faultId) {
+    return request("DELETE", `/faults/${faultId}`);
 }
 
 // TOOLS
