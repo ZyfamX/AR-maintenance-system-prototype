@@ -1,4 +1,3 @@
-import { login, logout } from './api.js';
 import { login, logout, getFaults, getTools } from './api.js';
 
 // View Navigation Helper
@@ -92,6 +91,7 @@ export function setupEventListeners() {
 
 // --- Data Loading Logic ---
 export async function loadDashboardData() {
+
     try {
         // Fetch data from your Python API
         const faults = await getFaults();
