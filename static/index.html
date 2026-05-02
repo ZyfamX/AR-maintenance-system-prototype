@@ -38,7 +38,8 @@
         .account-btn { background: transparent; border: 1px solid #64748b; border-radius: 50%; }
 
         /* Sidebar */
-        .sidebar { grid-area: sidebar; background-color: #1e293b; border-right: 2px solid #334155; padding-top: 20px; }
+        .menu-toggle-btn { display: none; background: transparent; border: none; color: white; font-size: 2rem; cursor: pointer; min-width: 48px; min-height: 48px; padding: 0; margin-right: 10px;text-align: center; }
+        .sidebar { grid-area: sidebar; background-color: #1e293b; border-right: 2px solid #334155; padding-top: 20px; display: flex; flex-direction: column; }
         .nav-item { padding: 15px 20px; display: block; width: 100%; text-align: left; background: transparent; border: none; color: #cbd5e1; font-size: 1rem; border-radius: 0; border-left: 4px solid transparent; }
         .nav-item:hover, .nav-item.active { background-color: #334155; color: white; border-left-color: #3b82f6; }
 
@@ -67,11 +68,41 @@
         .badge-assigned { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
         .badge-resolved { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
 
+        /* New Logout Styles */
+        .sidebar-spacer { flex-grow: 1; } /* Pushes everything below this to the very bottom */
+        .logout-container { padding: 20px; text-align: center; border-top: 1px solid #334155; }
+        .logout-btn { background: transparent; border: none; color: #cbd5e1; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; font-size: 0.9rem; }
+        .logout-btn:hover { color: white; }
+        .logout-icon { font-size: 1.5rem; background: #334155; padding: 10px; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
+
+        /* Floating AR Button (FAB) */
+        .fab-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1000; }
+        .fab-ar { display: flex; align-items: center; justify-content: center; width: 70px; height: 70px; background-color: #f97316; color: white; border-radius: 50%; text-decoration: none; font-size: 2rem; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4); transition: transform 0.2s, background-color 0.2s; }
+        .fab-ar:hover { transform: translateX(-50%) scale(1.05); background-color: #ea580c; }
+
+        
         /* Media Query for Mobile (NF5) */
         @media (max-width: 768px) {
             .dashboard-layout { grid-template-areas: "header" "main"; grid-template-columns: 1fr; }
-            .sidebar { display: none; } /* Hide sidebar on small phones, would need a hamburger menu later */
             .tables-row { grid-template-columns: 1fr; }
+            
+            /* Show the hamburger menu on small screens */
+            .menu-toggle-btn { display: block; }
+            
+            /* Transform sidebar into a mobile drawer */
+            .sidebar { 
+                position: fixed; 
+                top: 60px; /* Starts right below the header */
+                left: -250px; /* Hides it off-screen to the left */
+                width: 250px; 
+                height: calc(100vh - 60px); 
+                z-index: 2000; 
+                transition: left 0.3s ease-in-out; /* Smooth sliding animation */
+                box-shadow: 4px 0 15px rgba(0,0,0,0.5);
+            }
+            
+            /* This class will be added by JavaScript to open the menu */
+            .sidebar.open { left: 0; }
         }
     </style>
 </head>
@@ -92,17 +123,28 @@
     <div id="dashboard-view" class="view-container dashboard-layout hidden">
         
         <header>
-            <div class="header-logo">⚙️ CMS: AR SYSTEM</div>
-            <div class="header-controls">
-                    <a href="/ar" id="btn-launch-ar" style="background: #f97316; padding: 10px 15px; text-decoration: none; border-radius: 4px; color: white;">📷 Launch AR</a>
-                    <button id="btn-logout" class="account-btn" title="Logout">👤</button>
+            <div class="header-logo" style="display: flex; align-items: center;">
+                <!-- NEW: The Hamburger Button -->
+                <button id="btn-menu-toggle" class="menu-toggle-btn">≡</button>
+                <span>⚙️ CMS: AR SYSTEM</span>
             </div>
+            <div class="header-controls"></div>
         </header>
 
         <nav class="sidebar">
             <button class="nav-item active">DASHBOARD</button>
             <button class="nav-item">ACTIVE FAULTS</button>
             <button class="nav-item">TOOL LOG</button>
+            
+            <!-- Pushes the logout button to the bottom -->
+            <div class="sidebar-spacer"></div>
+            
+            <div class="logout-container">
+                <button id="btn-logout" class="logout-btn" title="Logout">
+                    <span class="logout-icon">👤</span>
+                    <span>Log out</span>
+                </button>
+            </div>
         </nav>
 
         <main class="main-content">
@@ -159,6 +201,9 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+            <div class="fab-container">
+                <a href="/ar" id="btn-launch-ar" class="fab-ar" title="Launch AR Scanner">📷</a>
             </div>
         </main>
     </div>

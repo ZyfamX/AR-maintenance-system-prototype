@@ -9,6 +9,8 @@ export function showView(viewId) {
 
 }
 
+
+
 // Data Loading Logic
 export async function loadDashboardData() {
 
@@ -69,14 +71,40 @@ export async function loadDashboardData() {
     }
 }
 
+
+// Startup Check (Session Persistence)
+export async function checkSessionOnLoad() {
+    try {
+        // Attempt to fetch data. If it works, the user's cookie is still valid!
+        await getFaults();
+        showView('dashboard-view');
+        loadDashboardData();
+    } catch (error) {
+        // Cookie expired or missing. Leave them on the login screen.
+        console.log("No active session. Please log in.");
+    }
+}
+
+
 // Event Listeners Setup
 export function setupEventListeners() {
+
+    const btnMenuToggle = document.getElementById('btn-menu-toggle');
+    const sidebar = document.querySelector('.sidebar');
+
+    // Mobile Menu Toggle
+    if (btnMenuToggle && sidebar) {
+        btnMenuToggle.addEventListener('click', () => {
+            // Toggles the 'open' class on and off every time you click
+            sidebar.classList.toggle('open');
+        });
+    }
 
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
     const btnLogout = document.getElementById('btn-logout');
 
-    // 1. Handle Login Submit
+    // Handle Login Submit
     if (loginForm) {
 
         loginForm.addEventListener('submit', async (e) => {
