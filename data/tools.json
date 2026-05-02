@@ -5,7 +5,7 @@
     "tool_type": "Hammer Drill",
     "status": "Available",
     "current_user_id": null,
-    "checkout_time": null
+    "checkout_timestamp": null
   },
   {
     "id": 2,
@@ -13,6 +13,6 @@
     "tool_type": "Torque Wrench",
     "status": "Checked-Out",
     "current_user_id": 2,
-    "checkout_time": null
+    "checkout_timestamp": null
   }
 ]

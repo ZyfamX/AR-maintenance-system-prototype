@@ -66,7 +66,7 @@ class ToolScan(BaseModel):
 # What the backend sends to the dashboard list (Updated for Fleet Approach)
 class ToolOut(BaseModel):
     
-    asset_id: str
+    id: int
     marker_id: str
     tool_type: str
     status: str

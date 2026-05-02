@@ -1,10 +1,11 @@
-import { setupEventListeners } from './ui.js';
+import { setupEventListeners, checkSessionOnLoad } from './ui.js';
 
-// Wait for the DOM (HTML) to be fully loaded before attaching listeners
 document.addEventListener('DOMContentLoaded', () => {
     
     setupEventListeners();
     
-    console.log("AR Maintenance System Initialized.");
+    // Check if the user is already logged in before forcing them to the login screen
+    checkSessionOnLoad();
     
+    console.log("AR Maintenance System Initialized.");
 });
