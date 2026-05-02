@@ -94,9 +94,8 @@
         <header>
             <div class="header-logo">⚙️ CMS: AR SYSTEM</div>
             <div class="header-controls">
-                <button id="btn-launch-ar" style="background: #f97316;">📷 Launch AR</button>
-                <!-- User Account / Logout Button -->
-                <button id="btn-logout" class="account-btn" title="Logout">👤</button>
+                    <a href="/ar" id="btn-launch-ar" style="background: #f97316; padding: 10px 15px; text-decoration: none; border-radius: 4px; color: white;">📷 Launch AR</a>
+                    <button id="btn-logout" class="account-btn" title="Logout">👤</button>
             </div>
         </header>
 
@@ -162,22 +161,6 @@
                 </div>
             </div>
         </main>
-    </div>
-
-    <!-- SCREEN 3: AR SCANNER -->
-    <div id="ar-view" class="view-container hidden">
-        
-        <!-- UI Overlay on top of the camera -->
-        <div id="ui-layer" class="view-container">
-            <button id="btn-home" class="interactive" style="min-height: 48px; margin: 10px;">🏠 Dashboard</button> <!-- Requirement F16 -->
-            <div id="ar-status-text" style="background: rgba(0,0,0,0.7); padding: 10px;">Scanning for markers...</div>
-        </div>
-
-        <!-- The actual A-Frame/AR.js Scene -->
-        <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false">
-            <!-- Markers will go here later -->
-            <a-entity camera></a-entity>
-        </a-scene>
     </div>
 
     <!-- Your JavaScript Logic -->

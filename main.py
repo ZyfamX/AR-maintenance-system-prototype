@@ -525,6 +525,10 @@ def verify_logs():
     return {"status": "ok", "message": "Audit log integrity verified"}
 
 
+@app.get("/ar")
+def ar_page():
+    return FileResponse("static/ar.html")
+
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.get("/")
