@@ -22,7 +22,7 @@ def read_json(filename: str):
 
     if not os.path.exists(filepath):
         return []
-    with open(filepath, "r") as file:
+    with open(filepath, "r", encoding="utf-8") as file:
         return json.load(file)
 
 def write_json(filename: str, data: list):
