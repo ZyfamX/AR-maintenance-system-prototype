@@ -1,22 +1,22 @@
 [
-  {
-    "id": 1,
-    "username": "j.smith_sup",
-    "password_hash": "$2b$12$IR/e7pUMtLNXw.t7ekRPn.VL7KP6rgZC1SKrtqUbj6Su5KR5hcrey",
-    "failed_attempts": 0,
-    "lock_until": null,
-    "first_name": "John",
-    "last_name": "Smith",
-    "role": "Supervisor"
-  },
-  {
-    "id": 2,
-    "username": "a.davis_tech",
-    "password_hash": "$2b$12$6DcEOJZ5iXveztiwy3MscuPNPig6D.B8t4g./09vRVQUGRLvIDvCq",
-    "failed_attempts": 0,
-    "lock_until": null,
-    "first_name": "Amina",
-    "last_name": "Davis",
-    "role": "Technician"
-  }
+    {
+        "id": 1,
+        "username": "j.smith_sup",
+        "password_hash": "$2b$12$IR/e7pUMtLNXw.t7ekRPn.VL7KP6rgZC1SKrtqUbj6Su5KR5hcrey",
+        "failed_attempts": 0,
+        "lock_until": null,
+        "first_name": "John",
+        "last_name": "Smith",
+        "role": "Supervisor"
+    },
+    {
+        "id": 2,
+        "username": "a.davis_tech",
+        "password_hash": "$2b$12$6DcEOJZ5iXveztiwy3MscuPNPig6D.B8t4g./09vRVQUGRLvIDvCq",
+        "failed_attempts": 0,
+        "lock_until": null,
+        "first_name": "Amina",
+        "last_name": "Davis",
+        "role": "Technician"
+    }
 ]

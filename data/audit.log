@@ -1,0 +1,2 @@
+{"timestamp": "2026-05-02T10:58:18.073465+00:00Z", "user_id": null, "action": "Unsuccessful_Login", "details": "Unknown username: j.smith", "prev_hash": "0", "hash": "b508785d77e92233027605c408d0026e743ad591238fdc578b6316a87f4c8f54"}
+{"timestamp": "2026-05-02T10:58:44.429014+00:00Z", "user_id": 1, "action": "Successful_Login", "details": "User j.smith_sup successfully logged in.", "prev_hash": "b508785d77e92233027605c408d0026e743ad591238fdc578b6316a87f4c8f54", "hash": "32b6ae550ab6247d03511b3354d3601e4213533ba0d93815ee9d7f8e1e63778b"}
