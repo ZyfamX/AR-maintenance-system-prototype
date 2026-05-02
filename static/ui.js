@@ -1,4 +1,5 @@
 import { login, logout } from './api.js';
+import { login, logout, getFaults, getTools } from './api.js';
 
 // View Navigation Helper
 // This function hides all screens, then unhides the one asked for
@@ -44,6 +45,7 @@ export function setupEventListeners() {
             
             console.log("Successfully logged in as:", user.first_name);
             showView('dashboard-view'); // Switch the screen!
+            loadDashboardData(); // Load the dashboard data after successful login
             
         } catch (error) {
             // If the backend sends a 401 Unauthorized, it throws an error here
@@ -84,5 +86,62 @@ export function setupEventListeners() {
         }
 
     });
-    
+
+}
+
+
+// --- Data Loading Logic ---
+export async function loadDashboardData() {
+    try {
+        // Fetch data from your Python API
+        const faults = await getFaults();
+        const tools = await getTools();
+
+        // 1. Update KPI Counters
+        const activeFaults = faults.filter(f => f.status === 'Active' || f.status === 'Assigned').length;
+        const deployedTools = tools.filter(t => t.status === 'Checked-Out').length;
+        
+        document.getElementById('kpi-faults').textContent = activeFaults;
+        document.getElementById('kpi-tools').textContent = deployedTools;
+
+        // 2. Populate Faults Table
+        const faultsBody = document.getElementById('faults-table-body');
+        faultsBody.innerHTML = ''; // Clear existing rows
+        
+        faults.forEach(fault => {
+            // Pick a badge color based on status
+            let badgeClass = 'badge-active';
+            if(fault.status === 'Assigned') badgeClass = 'badge-assigned';
+            if(fault.status === 'Resolved') badgeClass = 'badge-resolved';
+
+            const row = `
+                <tr>
+                    <td>F-${fault.id}</td>
+                    <td>${fault.title}</td>
+                    <td>${fault.location}</td>
+                    <td><span class="badge ${badgeClass}">${fault.status.toUpperCase()}</span></td>
+                </tr>
+            `;
+            faultsBody.innerHTML += row;
+        });
+
+        // 3. Populate Tools Table
+        const toolsBody = document.getElementById('tools-table-body');
+        toolsBody.innerHTML = ''; // Clear existing rows
+        
+        tools.forEach(tool => {
+            const row = `
+                <tr>
+                    <td>${tool.asset_id || tool.id}</td>
+                    <td>${tool.tool_type}</td>
+                    <td>${tool.status}</td>
+                    <td>${tool.current_user_id ? 'User ' + tool.current_user_id : 'In Storage'}</td>
+                </tr>
+            `;
+            toolsBody.innerHTML += row;
+        });
+
+    } catch (error) {
+        console.error("Failed to load dashboard data:", error);
+    }
 }
