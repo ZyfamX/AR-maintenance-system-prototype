@@ -17,16 +17,23 @@ export async function loadDashboardData() {
         const faults = await getFaults();
         const tools = await getTools();
 
-        // Calculate KPI values
+        // 1. Calculate KPI values 
         const activeCount = faults.filter(f => f.status === 'Active').length;
         const reviewCount = faults.filter(f => f.status === 'In-Review').length;
         const progressCount = faults.filter(f => f.status === 'In-Progress').length; 
+        
+        // NEW: Calculate Tool KPIs
+        const toolsOutCount = tools.filter(t => t.status === 'Checked-Out').length;
+        const toolsAvailCount = tools.filter(t => t.status === 'Available').length;
         
         // 2. Update KPI UI
         if (document.getElementById('kpi-active')) document.getElementById('kpi-active').textContent = activeCount;
         if (document.getElementById('kpi-review')) document.getElementById('kpi-review').textContent = reviewCount;
         if (document.getElementById('kpi-progress')) document.getElementById('kpi-progress').textContent = progressCount;
-
+        
+        // NEW: Update Tool KPI UI
+        if (document.getElementById('kpi-tools-out')) document.getElementById('kpi-tools-out').textContent = toolsOutCount;
+        if (document.getElementById('kpi-tools-avail')) document.getElementById('kpi-tools-avail').textContent = toolsAvailCount;
 
         const faultsBody = document.getElementById('faults-table-body');
         faultsBody.innerHTML = ''; 
@@ -34,42 +41,48 @@ export async function loadDashboardData() {
         // Filter array to only include faults that are NOT "Resolved"
         const liveFaults = faults.filter(fault => fault.status.trim().toLowerCase() !== 'resolved');
                 
-        // Loop through the filtered list
+        // Populate Faults Table
         liveFaults.forEach(fault => {
-
-            let badgeClass = 'badge-active';
             
-            // Check for In-Progress status (Removed 'Assigned')
-            if(fault.status === 'In-Progress') {
-                badgeClass = 'badge-assigned'; // We keep this class name because your CSS still uses it for the blue color!
-            }
-            // Check for In-Review status
-            if(fault.status === 'In-Review') {
-                badgeClass = 'badge-review';
-            }
+            // Fault Status Logic
+            let badgeClass = 'badge-active';
+            if(fault.status === 'In-Progress') badgeClass = 'badge-assigned'; 
+            if(fault.status === 'In-Review') badgeClass = 'badge-review';
+
+            // NEW: Fault Priority Logic
+            let priorityClass = 'badge-low'; // Default to low
+            if (fault.priority === 'High' || fault.priority === 'HIGH') priorityClass = 'badge-high';
+            if (fault.priority === 'Medium' || fault.priority === 'MEDIUM') priorityClass = 'badge-medium';
 
             const row = `
                 <tr>
                     <td>F-${fault.id}</td>
                     <td>${fault.title}</td>
                     <td>${fault.location}</td>
-                    <td style="font-weight: bold;">${fault.priority ? fault.priority.toUpperCase() : 'N/A'}</td>
+                    <td><span class="badge ${priorityClass}">${fault.priority ? fault.priority.toUpperCase() : 'N/A'}</span></td>
                     <td><span class="badge ${badgeClass}">${fault.status.toUpperCase()}</span></td>
                 </tr>
             `;
             faultsBody.innerHTML += row;
         });
 
-        // 4. Populate Tools Table
+        // Populate Tools Table
         const toolsBody = document.getElementById('tools-table-body');
         toolsBody.innerHTML = ''; 
         
         tools.forEach(tool => {
+            
+            // NEW: Tool Status Logic
+            let toolBadgeClass = 'badge-out'; // Default to Checked-Out (Muted)
+            if (tool.status === 'Available') {
+                toolBadgeClass = 'badge-available'; // Green
+            }
+
             const row = `
                 <tr>
                     <td>${tool.id}</td>
                     <td>${tool.tool_type}</td>
-                    <td>${tool.status}</td>
+                    <td><span class="badge ${toolBadgeClass}">${tool.status.toUpperCase()}</span></td>
                     <td>${tool.current_user_id ? 'User ' + tool.current_user_id : 'In Storage'}</td>
                 </tr>
             `;
