@@ -80,6 +80,12 @@ body {
     transition: all 0.2s ease;
 }
 
+#login-error {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: #ff5555;
+}
+
 /* Buttons */
 button {
     min-height: 48px;
