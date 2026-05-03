@@ -22,7 +22,7 @@ def read_json(filename: str):
 
     if not os.path.exists(filepath):
         return []
-    with open(filepath, "r") as file:
+    with open(filepath, "r", encoding="utf-8") as file:
         return json.load(file)
 
 def write_json(filename: str, data: list):
@@ -309,7 +309,8 @@ def create_new_fault(payload: FaultCreate, request: Request):
         "title": payload.title,
         "description": payload.description,
         "location": payload.location,
-        "status": "Active",
+        "status": "In-Review", # New faults start in "In-Review" status
+        "Priority": None, # Priority is set by Supervisor after review
         "reported_by_id": user_id,
         "timestamp": now.isoformat() + "Z", # Standardized UTC format
         "assigned_to_id": None,      
@@ -349,7 +350,7 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
 
         if fault["id"] == fault_id:
             
-            # 2. RBAC ENFORCEMENT: TECHNICIAN RULES
+            # RBAC ENFORCEMENT: TECHNICIAN RULES
             if role == "Technician":
 
                 # Techs cannot resolve faults or assign users
@@ -372,6 +373,7 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
             elif role in ["Supervisor", "Administrator"]:
 
                 fault["status"] = payload.status
+                fault["priority"] = payload.priority
                 
                 if payload.assigned_to_id is not None:
                     fault["assigned_to_id"] = payload.assigned_to_id
