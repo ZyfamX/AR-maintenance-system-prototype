@@ -3,10 +3,22 @@ import { login, logout, getFaults, getTools } from './api.js';
 // View Navigation Helper
 export function showView(viewId) {
 
-    document.getElementById('login-view').classList.add('hidden');
-    document.getElementById('dashboard-view').classList.add('hidden');
-    document.getElementById(viewId).classList.remove('hidden');
+    const views = document.querySelectorAll('.view-container');
 
+    views.forEach(view => {
+        view.style.opacity = 0;
+    });
+
+    setTimeout(() => {
+        views.forEach(view => view.classList.add('hidden'));
+
+        const target = document.getElementById(viewId);
+        target.classList.remove('hidden');
+
+        requestAnimationFrame(() => {
+            target.style.opacity = 1;
+        });
+    }, 200);
 }
 
 
@@ -137,9 +149,20 @@ export function setupEventListeners() {
                 loginForm.reset(); 
                 
                 console.log("Successfully logged in as:", user.first_name);
-                showView('dashboard-view'); 
-                loadDashboardData(); 
-                
+
+                loginError.textContent = "Success! Redirecting...";
+                loginError.style.color = "#22c55e";
+
+                setTimeout(() => {
+                    showView('dashboard-view');
+                    loadDashboardData();
+
+                    loginError.textContent = "";
+                    loginForm.reset();
+                    passwordField.type = 'password';
+                    loginError.style.color = "#ff5555";
+                }, 400)
+            
             } catch (error) {
                 loginError.textContent = error.message || "Invalid credentials.";
                 loginButton.disabled = false;
