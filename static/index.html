@@ -43,7 +43,6 @@
                         <input type="password" id="password" placeholder="Password" required>
                     </div>
                     
-                    <!-- Form options matching teammate's exact IDs -->
                     <div class="form-options">
                         <label class="toggle-password">
                             <input type="checkbox" id="show-password"> Show password
@@ -103,15 +102,15 @@
                 <!-- LEFT COLUMN: FAULTS -->
                 <div class="column">
                     <div class="kpi-row">
-                        <div class="kpi-card">
+                        <div class="kpi-card card-active">
                             <span class="kpi-title">Active Faults</span>
                             <span class="kpi-value text-orange" id="kpi-active">0</span>
                         </div>
-                        <div class="kpi-card">
+                        <div class="kpi-card card-review">
                             <span class="kpi-title">Faults To Review</span>
-                            <span class="kpi-value" style="color: #a855f7;" id="kpi-review">0</span>
+                            <span class="kpi-value" style="color: #d8b4fe;" id="kpi-review">0</span>
                         </div>
-                        <div class="kpi-card">
+                        <div class="kpi-card card-progress">
                             <span class="kpi-title">Faults In-Progress</span>
                             <span class="kpi-value text-blue" id="kpi-progress">0</span>
                         </div>
@@ -139,11 +138,11 @@
                 <!-- RIGHT COLUMN: TOOLS -->
                 <div class="column">
                     <div class="kpi-row">
-                        <div class="kpi-card">
+                        <div class="kpi-card card-tools-out">
                             <span class="kpi-title">Tools Checked-Out</span>
                             <span class="kpi-value text-orange" id="kpi-tools-out">0</span>
                         </div>
-                        <div class="kpi-card">
+                        <div class="kpi-card card-tools-avail">
                             <span class="kpi-title">Tools Available</span>
                             <span class="kpi-value text-green" id="kpi-tools-avail">0</span>
                         </div>
