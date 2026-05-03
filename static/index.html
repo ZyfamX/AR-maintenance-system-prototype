@@ -23,7 +23,18 @@
                 <input type="password" id="password" placeholder="Password" required>
                 <button type="submit" style="min-height: 48px;">Login</button> <!-- NF1: 48px touch target -->
             </form>
+            <div id="login-forgot" class="forgot-link">Forgot Password</div>
             <div id="login-error"></div>
+        </div>
+
+        <div id="forgot-modal" class="modal hidden">
+            <div class="modal-card">
+                <h2>Password Reset</h2>
+                <p>
+                    Please contact the IT helpdesk to reset your password.
+                </p>
+                <button id="close-modal">Close</button>
+            </div>
         </div>
     </div>
 

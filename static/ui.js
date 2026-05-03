@@ -102,6 +102,9 @@ export function setupEventListeners() {
 
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
+    const forgotLink = document.getElementById('login-forgot');
+    const modal = document.getElementById('forgot-modal');
+    const closeModal = document.getElementById('close-modal');
     const btnLogout = document.getElementById('btn-logout');
 
     // Handle Login Submit
@@ -135,6 +138,21 @@ export function setupEventListeners() {
 
     }
 
+    if (forgotLink && modal && closeModal) {
+        forgotLink.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+        });
+
+        closeModal.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+            }
+        });
+    }
 
     // Handle Logout
     if (btnLogout) {
