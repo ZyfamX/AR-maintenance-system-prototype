@@ -11,28 +11,35 @@ export function showView(viewId) {
 
 
 
-// Data Loading Logic
+//Data Loading Logic
 export async function loadDashboardData() {
-
     try {
-
         const faults = await getFaults();
         const tools = await getTools();
 
-        const activeFaults = faults.filter(f => f.status === 'Active' || f.status === 'Assigned').length;
+        // Calculate KPI values
+        const activeFaults = faults.filter(f => f.status === 'Active' || f.status === 'Assigned' || f.status === 'In Progress').length;
         const deployedTools = tools.filter(t => t.status === 'Checked-Out').length;
         
+        // Update KPI UI
         document.getElementById('kpi-faults').textContent = activeFaults;
         document.getElementById('kpi-tools').textContent = deployedTools;
 
+        // Populate Faults Table
         const faultsBody = document.getElementById('faults-table-body');
         faultsBody.innerHTML = ''; 
-        
-        faults.forEach(fault => {
-
+                
+        // Filter array to only include faults that are NOT "Resolved"
+        const liveFaults = faults.filter(fault => fault.status.trim().toLowerCase() !== 'resolved');
+                
+        // Loop through the filtered list
+        liveFaults.forEach(fault => {
             let badgeClass = 'badge-active';
-            if(fault.status === 'Assigned') badgeClass = 'badge-assigned';
-            if(fault.status === 'Resolved') badgeClass = 'badge-resolved';
+            
+            // Check for Assigned or In Progress statuses
+            if(fault.status === 'Assigned' || fault.status === 'In Progress') {
+                badgeClass = 'badge-assigned';
+            }
 
             const row = `
                 <tr>
@@ -42,16 +49,14 @@ export async function loadDashboardData() {
                     <td><span class="badge ${badgeClass}">${fault.status.toUpperCase()}</span></td>
                 </tr>
             `;
-
             faultsBody.innerHTML += row;
-
         });
 
+        // Populate Tools Table
         const toolsBody = document.getElementById('tools-table-body');
         toolsBody.innerHTML = ''; 
         
         tools.forEach(tool => {
-
             const row = `
                 <tr>
                     <td>${tool.id}</td>
@@ -60,11 +65,8 @@ export async function loadDashboardData() {
                     <td>${tool.current_user_id ? 'User ' + tool.current_user_id : 'In Storage'}</td>
                 </tr>
             `;
-
             toolsBody.innerHTML += row;
-
         });
-
 
     } catch (error) {
         console.error("Failed to load dashboard data:", error);

@@ -63,11 +63,10 @@
         td { padding: 12px 10px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
         
         /* Status Badges */
-        .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
+        .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; white-space: nowrap; display: inline-block; text-align: center;}
         .badge-active { background: rgba(249, 115, 22, 0.2); color: #f97316; }
         .badge-assigned { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
         .badge-resolved { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
-
         /* New Logout Styles */
         .sidebar-spacer { flex-grow: 1; } /* Pushes everything below this to the very bottom */
         .logout-container { padding: 20px; text-align: center; border-top: 1px solid #334155; }
@@ -133,8 +132,8 @@
 
         <nav class="sidebar">
             <button class="nav-item active">DASHBOARD</button>
-            <button class="nav-item">ACTIVE FAULTS</button>
-            <button class="nav-item">TOOL LOG</button>
+            <button class="nav-item">ALL FAULTS</button>
+            <button class="nav-item">ALL TOOLS</button>
             
             <!-- Pushes the logout button to the bottom -->
             <div class="sidebar-spacer"></div>
@@ -212,7 +211,6 @@
     <script type="module" src="/static/api.js"></script>
     <script type="module" src="/static/main.js"></script>
     <script type="module" src="/static/ui.js"></script>
-    <script type="module" src="/static/ar_engine.js"></script>
 </body>
 </html>
 
