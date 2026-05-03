@@ -229,11 +229,11 @@ td { padding: 12px 10px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
 /* Priority Badges */
 .badge-high { background: rgba(225, 29, 72, 0.2); color: #fda4af; }    
 .badge-medium { background: rgba(217, 119, 6, 0.2); color: #fcd34d; }  
-.badge-low { background: rgba(71, 85, 105, 0.2); color: #cbd5e1; }     
+.badge-low { background: rgba(45, 212, 191, 0.2); color: #5eead4; }     /* AAA Brighter Teal */     
 
 /* Tool Status Badges */
 .badge-available { background: rgba(34, 197, 94, 0.2); color: #86efac; } 
-.badge-out { background: rgba(100, 116, 139, 0.2); color: #cbd5e1; }     
+.badge-out { background: rgba(226, 232, 240, 0.1); color: #e2e8f0; }    /* AAA Crisp Silver */    
 
 /* =========================================================
    LOGOUT & FAB
