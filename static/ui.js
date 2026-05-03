@@ -3,10 +3,22 @@ import { login, logout, getFaults, getTools } from './api.js';
 // View Navigation Helper
 export function showView(viewId) {
 
-    document.getElementById('login-view').classList.add('hidden');
-    document.getElementById('dashboard-view').classList.add('hidden');
-    document.getElementById(viewId).classList.remove('hidden');
+    const views = document.querySelectorAll('.view-container');
 
+    views.forEach(view => {
+        view.style.opacity = 0;
+    });
+
+    setTimeout(() => {
+        views.forEach(view => view.classList.add('hidden'));
+
+        const target = document.getElementById(viewId);
+        target.classList.remove('hidden');
+
+        requestAnimationFrame(() => {
+            target.style.opacity = 1;
+        });
+    }, 200);
 }
 
 
@@ -125,18 +137,31 @@ export function setupEventListeners() {
 
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
+    const showPassword = document.getElementById('show-password');
+    const loginButton = loginForm.querySelector('button');
+    const forgotLink = document.getElementById('login-forgot');
+    const modal = document.getElementById('forgot-modal');
+    const closeModal = document.getElementById('close-modal');
     const btnLogout = document.getElementById('btn-logout');
 
     // Handle Login Submit
     if (loginForm) {
+        const usernameField = document.getElementById('username')
+        const passwordField = document.getElementById('password')
 
         loginForm.addEventListener('submit', async (e) => {
 
-            e.preventDefault(); 
+            e.preventDefault();
+            loginButton.disabled = true;
             
-            const usernameInput = document.getElementById('username').value;
-            const passwordInput = document.getElementById('password').value;
+            const usernameInput = usernameField.value;
+            const passwordInput = passwordField.value;
             
+            if (passwordInput.length < 8) {
+                loginError.textContent = "Password must be at least 8 characters.";
+                return;
+            }
+
             try {
 
                 loginError.textContent = "Authenticating..."; 
@@ -147,17 +172,54 @@ export function setupEventListeners() {
                 loginForm.reset(); 
                 
                 console.log("Successfully logged in as:", user.first_name);
-                showView('dashboard-view'); 
-                loadDashboardData(); 
-                
+
+                loginError.textContent = "Success! Redirecting...";
+                loginError.style.color = "#22c55e";
+
+                setTimeout(() => {
+                    showView('dashboard-view');
+                    loadDashboardData();
+
+                    loginError.textContent = "";
+                    loginForm.reset();
+                    passwordField.type = 'password';
+                    loginError.style.color = "#ff5555";
+                }, 400)
+            
             } catch (error) {
                 loginError.textContent = error.message || "Invalid credentials.";
+                loginButton.disabled = false;
             }
 
         });
 
+        loginButton.disabled = true;
+        passwordField.addEventListener('input', () => {
+            const valid = passwordField.value.length >= 8;
+
+            loginButton.disabled = !valid;
+        });
+
+        showPassword.addEventListener('change', () => {
+            passwordField.type = showPassword.checked ? 'text' : 'password';
+        });
     }
 
+    if (forgotLink && modal && closeModal) {
+        forgotLink.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+        });
+
+        closeModal.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+            }
+        });
+    }
 
     // Handle Logout
     if (btnLogout) {

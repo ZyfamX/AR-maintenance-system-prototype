@@ -9,19 +9,38 @@
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
-    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/styles.css">
+  
 </head>
 <body>
 
     <!-- SCREEN 1: LOGIN -->
-    <div id="login-view" class="view-container interactive">
-        <h1>Maintenance Login</h1>
-        <form id="login-form">
-            <input type="text" id="username" placeholder="Username" required>
-            <input type="password" id="password" placeholder="Password" required>
-            <button type="submit" style="min-height: 48px;">Login</button> <!-- NF1: 48px touch target -->
-        </form>
-        <div id="login-error" style="color: #ff5555;"></div>
+    <div id="login-view" class="view-container login-overlay">
+        <div class="login-card">
+            <h1>Maintenance Login</h1>
+            <form id="login-form">
+                <input type="text" id="username" placeholder="Username" required autofocus>
+                <input type="password" id="password" placeholder="Password" required>
+                <label class="toggle-password">
+                    <input type="checkbox" id="show-password">
+                    Show password
+                </label>
+                <button type="submit" style="min-height: 48px;">Login</button> <!-- NF1: 48px touch target -->
+            </form>
+            <div id="login-forgot" class="forgot-link">Forgot Password</div>
+            <div id="login-error"></div>
+        </div>
+
+        <div id="forgot-modal" class="modal hidden">
+            <div class="modal-card">
+                <h2>Password Reset</h2>
+                <p>
+                    Please contact the IT helpdesk to reset your password.
+                </p>
+                <button id="close-modal">Close</button>
+            </div>
+        </div>
     </div>
 
     <!-- SCREEN 2: DASHBOARD -->
