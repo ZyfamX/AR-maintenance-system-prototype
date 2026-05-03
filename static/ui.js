@@ -102,6 +102,7 @@ export function setupEventListeners() {
 
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
+    const showPassword = document.getElementById('show-password');
     const loginButton = loginForm.querySelector('button');
     const forgotLink = document.getElementById('login-forgot');
     const modal = document.getElementById('forgot-modal');
@@ -151,7 +152,11 @@ export function setupEventListeners() {
             const valid = passwordField.value.length >= 8;
 
             loginButton.disabled = !valid;
-        })
+        });
+
+        showPassword.addEventListener('change', () => {
+            passwordField.type = showPassword.checked ? 'text' : 'password';
+        });
     }
 
     if (forgotLink && modal && closeModal) {

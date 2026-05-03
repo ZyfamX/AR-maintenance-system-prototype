@@ -89,6 +89,25 @@ body {
     box-shadow: 0 8px 20px rgba(59,130,246,0.4);
 }
 
+.toggle-password {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    font-size: 0.85rem;
+    color: #94a3b8;
+
+    margin-bottom: 15px;
+    margin-left: 5px;
+    cursor: pointer;
+}
+
+.toggle-password input {
+    width: auto;
+    margin: 0;
+    cursor: pointer;
+}
+
 #login-error {
     margin-top: 10px;
     font-size: 0.85rem;

@@ -19,8 +19,12 @@
         <div class="login-card">
             <h1>Maintenance Login</h1>
             <form id="login-form">
-                <input type="text" id="username" placeholder="Username" required>
+                <input type="text" id="username" placeholder="Username" required autofocus>
                 <input type="password" id="password" placeholder="Password" required>
+                <label class="toggle-password">
+                    <input type="checkbox" id="show-password">
+                    Show password
+                </label>
                 <button type="submit" style="min-height: 48px;">Login</button> <!-- NF1: 48px touch target -->
             </form>
             <div id="login-forgot" class="forgot-link">Forgot Password</div>
