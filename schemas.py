@@ -32,7 +32,8 @@ class FaultCreate(BaseModel):
 # What the Supervisor dashboard sends to assign OR resolve a fault
 class FaultUpdate(BaseModel):
 
-    status: str = Field(pattern="^(Active|Assigned|Resolved)$")
+    status: str = Field(pattern="^(In-Review|Active|In-Progress|Resolved)$")
+    priority: Optional[str] = Field(default=None, pattern="^(Low|Medium|High)$")
     assigned_to_id: Optional[int] = None
     resolved_by_id: Optional[int] = None
     notes: Optional[str] = None
@@ -49,6 +50,7 @@ class FaultOut(BaseModel):
     status: str
     timestamp: str
     reported_by_id: int
+    priority: Optional[str] = None
     assigned_to_id: Optional[int] = None
     resolved_by_id: Optional[int] = None
     notes: Optional[str] = None

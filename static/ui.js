@@ -11,21 +11,23 @@ export function showView(viewId) {
 
 
 
-//Data Loading Logic
+// Data Loading Logic
 export async function loadDashboardData() {
     try {
         const faults = await getFaults();
         const tools = await getTools();
 
         // Calculate KPI values
-        const activeFaults = faults.filter(f => f.status === 'Active' || f.status === 'Assigned' || f.status === 'In Progress').length;
-        const deployedTools = tools.filter(t => t.status === 'Checked-Out').length;
+        const activeCount = faults.filter(f => f.status === 'Active').length;
+        const reviewCount = faults.filter(f => f.status === 'In-Review').length;
+        const progressCount = faults.filter(f => f.status === 'In-Progress').length; 
         
-        // Update KPI UI
-        document.getElementById('kpi-faults').textContent = activeFaults;
-        document.getElementById('kpi-tools').textContent = deployedTools;
+        // 2. Update KPI UI
+        if (document.getElementById('kpi-active')) document.getElementById('kpi-active').textContent = activeCount;
+        if (document.getElementById('kpi-review')) document.getElementById('kpi-review').textContent = reviewCount;
+        if (document.getElementById('kpi-progress')) document.getElementById('kpi-progress').textContent = progressCount;
 
-        // Populate Faults Table
+
         const faultsBody = document.getElementById('faults-table-body');
         faultsBody.innerHTML = ''; 
                 
@@ -34,11 +36,16 @@ export async function loadDashboardData() {
                 
         // Loop through the filtered list
         liveFaults.forEach(fault => {
+
             let badgeClass = 'badge-active';
             
-            // Check for Assigned or In Progress statuses
-            if(fault.status === 'Assigned' || fault.status === 'In Progress') {
-                badgeClass = 'badge-assigned';
+            // Check for In-Progress status (Removed 'Assigned')
+            if(fault.status === 'In-Progress') {
+                badgeClass = 'badge-assigned'; // We keep this class name because your CSS still uses it for the blue color!
+            }
+            // Check for In-Review status
+            if(fault.status === 'In-Review') {
+                badgeClass = 'badge-review';
             }
 
             const row = `
@@ -46,13 +53,14 @@ export async function loadDashboardData() {
                     <td>F-${fault.id}</td>
                     <td>${fault.title}</td>
                     <td>${fault.location}</td>
+                    <td style="font-weight: bold;">${fault.priority ? fault.priority.toUpperCase() : 'N/A'}</td>
                     <td><span class="badge ${badgeClass}">${fault.status.toUpperCase()}</span></td>
                 </tr>
             `;
             faultsBody.innerHTML += row;
         });
 
-        // Populate Tools Table
+        // 4. Populate Tools Table
         const toolsBody = document.getElementById('tools-table-body');
         toolsBody.innerHTML = ''; 
         

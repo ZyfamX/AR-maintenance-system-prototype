@@ -67,6 +67,8 @@
         .badge-active { background: rgba(249, 115, 22, 0.2); color: #f97316; }
         .badge-assigned { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
         .badge-resolved { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+        .badge-review { background: rgba(168, 85, 247, 0.2); color: #a855f7; } 
+
         /* New Logout Styles */
         .sidebar-spacer { flex-grow: 1; } /* Pushes everything below this to the very bottom */
         .logout-container { padding: 20px; text-align: center; border-top: 1px solid #334155; }
@@ -151,15 +153,15 @@
             <div class="kpi-row">
                 <div class="kpi-card">
                     <span class="kpi-title">Active Faults</span>
-                    <span class="kpi-value text-orange" id="kpi-faults">0</span>
+                    <span class="kpi-value text-orange" id="kpi-active">0</span>
                 </div>
                 <div class="kpi-card">
-                    <span class="kpi-title">Tools Deployed</span>
-                    <span class="kpi-value text-blue" id="kpi-tools">0</span>
+                    <span class="kpi-title">To Review</span>
+                    <span class="kpi-value" style="color: #a855f7;" id="kpi-review">0</span>
                 </div>
                 <div class="kpi-card">
-                    <span class="kpi-title">System Health</span>
-                    <span class="kpi-value text-green">GOOD</span>
+                    <span class="kpi-title">In-Progress</span>
+                    <span class="kpi-value text-blue" id="kpi-progress">0</span>
                 </div>
             </div>
 
@@ -167,13 +169,14 @@
             <div class="tables-row">
                 <!-- Faults Table -->
                 <div class="table-card">
-                    <h3 style="margin-top: 0;">LIVE ACTIVE FAULTS</h3>
+                    <h3 style="margin-top: 0;">LIVE FAULTS</h3>
                     <table>
                         <thead>
                             <tr>
                                 <th>FAULT ID</th>
                                 <th>TITLE</th>
                                 <th>LOCATION</th>
+                                <th>PRIORITY</th>
                                 <th>STATUS</th>
                             </tr>
                         </thead>
