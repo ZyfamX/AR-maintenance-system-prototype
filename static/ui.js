@@ -102,6 +102,7 @@ export function setupEventListeners() {
 
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
+    const loginButton = loginForm.querySelector('button');
     const forgotLink = document.getElementById('login-forgot');
     const modal = document.getElementById('forgot-modal');
     const closeModal = document.getElementById('close-modal');
@@ -109,13 +110,16 @@ export function setupEventListeners() {
 
     // Handle Login Submit
     if (loginForm) {
+        const usernameField = document.getElementById('username')
+        const passwordField = document.getElementById('password')
 
         loginForm.addEventListener('submit', async (e) => {
 
-            e.preventDefault(); 
+            e.preventDefault();
+            loginButton.disabled = true;
             
-            const usernameInput = document.getElementById('username').value;
-            const passwordInput = document.getElementById('password').value;
+            const usernameInput = usernameField.value;
+            const passwordInput = passwordField.value;
             
             if (passwordInput.length < 8) {
                 loginError.textContent = "Password must be at least 8 characters.";
@@ -137,10 +141,17 @@ export function setupEventListeners() {
                 
             } catch (error) {
                 loginError.textContent = error.message || "Invalid credentials.";
+                loginButton.disabled = false;
             }
 
         });
 
+        loginButton.disabled = true;
+        passwordField.addEventListener('input', () => {
+            const valid = passwordField.value.length >= 8;
+
+            loginButton.disabled = !valid;
+        })
     }
 
     if (forgotLink && modal && closeModal) {

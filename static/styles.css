@@ -84,7 +84,7 @@ body {
     transition: all 0.2s ease;
 }
 
-.login-card button:hover {
+.login-card button:hover:enabled {
     transform: translateY(-1px);
     box-shadow: 0 8px 20px rgba(59,130,246,0.4);
 }
@@ -160,7 +160,12 @@ button {
     font-weight: bold;
 }
 
-button:hover { background: #2563eb; }
+button:hover:enabled { background: #2563eb; }
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 
 /* Layout Grid for the Dashboard */
 .dashboard-layout {
