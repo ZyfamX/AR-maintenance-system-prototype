@@ -117,6 +117,11 @@ export function setupEventListeners() {
             const usernameInput = document.getElementById('username').value;
             const passwordInput = document.getElementById('password').value;
             
+            if (passwordInput.length < 8) {
+                loginError.textContent = "Password must be at least 8 characters.";
+                return;
+            }
+
             try {
 
                 loginError.textContent = "Authenticating..."; 

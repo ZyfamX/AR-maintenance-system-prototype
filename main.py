@@ -128,6 +128,9 @@ fault_submission_timestamps = {} # Stores {user_id: datetime}
 @app.post("/api/login", response_model=UserOut)
 def login_user(credentials: UserLogin, response: Response):
 
+    if len(credentials.password) < 8:
+        raise HTTPException(status_code=401, detail="Password must be at least 8 characters.")
+
     users = read_json("users.json")
     now = datetime.now(UTC)
 
@@ -147,7 +150,7 @@ def login_user(credentials: UserLogin, response: Response):
                 if now < lock_time:
 
                     log_system_event(user["id"], "Blocked_Login", "Attempt to log in to locked account.")
-                    raise HTTPException(status_code=403, detail="Account temporarily locked")
+                    raise HTTPException(status_code=403, detail="Account temporarily locked.")
                 
                 else:
 
@@ -198,7 +201,7 @@ def login_user(credentials: UserLogin, response: Response):
     if not user_found:
         log_system_event(None, "Unsuccessful_Login", f"Unknown username: {credentials.username}")
         
-    raise HTTPException(status_code=401, detail="Invalid username or password")
+    raise HTTPException(status_code=401, detail="Invalid username or password.")
 
 # Logs out the user, with a safety check for unreturned tools (Requirement F24)
 @app.post("/api/logout")
