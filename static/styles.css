@@ -345,7 +345,8 @@ td { padding: 12px 10px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
 /* Floating AR Button */
 .fab-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1000; }
 .fab-ar { display: flex; align-items: center; justify-content: center; width: 70px; height: 70px; background-color: #f97316; color: white; border-radius: 50%; text-decoration: none; font-size: 2rem; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4); transition: transform 0.2s, background-color 0.2s; }
-.fab-ar:hover { transform: translateX(-50%) scale(1.05); background-color: #ea580c; }
+.fab-ar:hover { transform: scale(1.25); background-color: #ea580c; }
+.fab-ar .icon { display: inline-block; transform: translateY(-7px); }
 
 /* =========================================================
    MOBILE RESPONSIVENESS
