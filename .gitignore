@@ -1,5 +1,5 @@
 .venv
 .vscode
 __pycache__
-audit.log
-sessions.json
+data/audit.log
+data/sessions.json
