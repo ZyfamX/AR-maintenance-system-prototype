@@ -41,7 +41,9 @@ async def auth_middleware(request: Request, call_next):
     public_paths = [
         "/api/login",
         "/health",
-        "/static"
+        "/static",
+        "/docs",
+        "/openapi.json"
     ]
 
     if request.url.path == "/" or request.url.path.startswith("/static"):
