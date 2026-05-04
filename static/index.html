@@ -73,7 +73,7 @@
         
         <header>
             <div class="header-logo" style="display: flex; align-items: center;">
-                <!-- NEW: The Hamburger Button -->
+                <!-- The Hamburger Button -->
                 <button id="btn-menu-toggle" class="menu-toggle-btn">≡</button>
                 <span>⚙️ CMS: AR SYSTEM</span>
             </div>
@@ -81,13 +81,7 @@
         </header>
 
         <nav class="sidebar">
-            <button class="nav-item active">DASHBOARD</button>
-            <button class="nav-item">ALL FAULTS</button>
-            <button class="nav-item">ALL TOOLS</button>
-            
-            <!-- Pushes the logout button to the bottom -->
             <div class="sidebar-spacer"></div>
-            
             <div class="logout-container">
                 <button id="btn-logout" class="logout-btn" title="Logout">
                     <span class="logout-icon">👤</span>
@@ -97,7 +91,7 @@
         </nav>
 
         <main class="main-content">
-            <div class="dashboard-columns">
+            <div id="dashboard-columns-view" class="dashboard-columns sub-view">   
                 
                 <!-- LEFT COLUMN: FAULTS -->
                 <div class="column">
@@ -116,22 +110,25 @@
                         </div>
                     </div>
 
+                    <!-- Dashboard Faults Table -->
                     <div class="table-card">
                         <h3 style="margin-top: 0;">LIVE FAULTS</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>FAULT ID</th>
-                                    <th>TITLE</th>
-                                    <th>LOCATION</th>
-                                    <th>PRIORITY</th>
-                                    <th>STATUS</th>
-                                </tr>
-                            </thead>
-                            <tbody id="faults-table-body">
-                                <!-- Populated by JavaScript -->
-                            </tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr style="cursor: pointer; white-space: nowrap;">
+                                        <th data-sort="id">FAULT ID ↕</th>
+                                        <th data-sort="title">TITLE ↕</th>
+                                        <th data-sort="location">LOCATION ↕</th>
+                                        <th data-sort="priority">PRIORITY ↕</th>
+                                        <th data-sort="status">STATUS ↕</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="faults-table-body">
+                                    <!-- Populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -148,25 +145,188 @@
                         </div>
                     </div>
 
+                    <!-- Dashboard Tools Table -->
                     <div class="table-card">
                         <h3 style="margin-top: 0;">TOOL TRACKING LOG</h3>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr style="cursor: pointer; white-space: nowrap;">
+                                        <th data-sort="id">TOOL ID ↕</th>
+                                        <th data-sort="type">TYPE ↕</th>
+                                        <th data-sort="status">STATUS ↕</th>
+                                        <th data-sort="user">CURRENT USER ↕</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tools-table-body">
+                                    <!-- Populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- TECHNICIAN VIEWS -->
+            <div id="assigned-faults-view" class="sub-view hidden">
+                <div class="table-card">
+                    <h3 style="margin-top: 0;">MY FAULTS</h3>
+                </div>
+            </div>
+
+            <div id="active-tools-view" class="sub-view hidden">
+                <div class="table-card">
+                    <h3 style="margin-top: 0;">MY TOOLS</h3>
+                </div>
+            </div>
+
+            <!-- SUPERVISOR VIEWS -->
+            <div id="all-faults-view" class="sub-view hidden">
+                <div class="table-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin-top: 0; margin-bottom: 0;">MASTER FAULT LOG</h3>
+                        <div class="table-controls" style="display: flex; gap: 10px;">
+                            <input type="text" id="search-faults" placeholder="Search faults..." style="padding: 5px; border-radius: 4px; border: 1px solid #334155; background: #1e293b; color: white;">
+                            <select id="filter-faults" style="padding: 5px; border-radius: 4px; border: 1px solid #334155; background: #1e293b; color: white;">
+                                <option value="all">All Statuses</option>
+                                <option value="active">Active</option>
+                                <option value="in-progress">In-Progress</option>
+                                <option value="in-review">In-Review</option>
+                                <option value="resolved">Resolved</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
                         <table>
                             <thead>
-                                <tr>
-                                    <th>TOOL ID</th>
-                                    <th>TYPE</th>
-                                    <th>STATUS</th>
-                                    <th>CURRENT USER</th>
+                                <tr style="cursor: pointer;">
+                                    <th data-sort="id">ID ↕</th>
+                                    <th data-sort="title">TITLE ↕</th>
+                                    <th data-sort="location">LOCATION ↕</th>
+                                    <th data-sort="priority">PRIORITY ↕</th>
+                                    <th data-sort="status">STATUS ↕</th>
+                                    <th data-sort="reported">REPORTED BY ↕</th>
+                                    <th data-sort="assigned">ASSIGNED TO ↕</th>
+                                    <th data-sort="time">REPORTED TIME ↕</th>
+                                    <th>ACTION</th>
                                 </tr>
                             </thead>
-                            <tbody id="tools-table-body">
+                            <tbody id="all-faults-table-body">
                                 <!-- Populated by JavaScript -->
                             </tbody>
                         </table>
                     </div>
                 </div>
-
             </div>
+
+            <!-- RESTORED: ALL TOOLS VIEW -->
+            <div id="all-tools-view" class="sub-view hidden">
+                <div class="table-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin-top: 0; margin-bottom: 0;">MASTER TOOL INVENTORY</h3>
+                        <div class="table-controls" style="display: flex; gap: 10px;">
+                            <input type="text" id="search-tools" placeholder="Search tools..." style="padding: 5px; border-radius: 4px; border: 1px solid #334155; background: #1e293b; color: white;">
+                            <select id="filter-tools" style="padding: 5px; border-radius: 4px; border: 1px solid #334155; background: #1e293b; color: white;">
+                                <option value="all">All Statuses</option>
+                                <option value="available">Available</option>
+                                <option value="checked-out">Checked-Out</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr style="cursor: pointer;">
+                                    <th data-sort="id">TOOL ID ↕</th>
+                                    <th data-sort="type">TYPE ↕</th>
+                                    <th data-sort="status">STATUS ↕</th>
+                                    <th data-sort="user">CURRENT USER ↕</th>
+                                    <th data-sort="time">CHECKOUT TIME ↕</th>
+                                </tr>
+                            </thead>
+                            <tbody id="all-tools-table-body">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+           <!-- FAULTS TO REVIEW -->
+            <div id="review-faults-view" class="sub-view hidden">
+                <div class="table-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin-top: 0; margin-bottom: 0; color: #d8b4fe;">⚡ FAULTS TO REVIEW</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr style="cursor: pointer;">
+                                    <th data-sort="id">ID ↕</th>
+                                    <th data-sort="title">TITLE ↕</th>
+                                    <th data-sort="location">LOCATION ↕</th>
+                                    <th data-sort="reported">REPORTED BY ↕</th>
+                                    <th data-sort="time">TIME ↕</th>
+                                    <th>SET PRIORITY</th>
+                                    <th>ASSIGN TECH</th>
+                                    <th>ACTION</th>
+                                </tr>
+                            </thead>
+                            <tbody id="review-faults-table-body">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="assign-tech-view" class="sub-view hidden">
+                <div class="table-card"><h3 style="margin-top: 0;">ASSIGN TECHNICIANS</h3></div>
+            </div>
+
+            <!-- FAULT REPORT MODAL -->
+            <div id="fault-report-modal" class="modal hidden">
+                <div class="modal-card" style="width: 95%; max-width: 600px; max-height: 90vh; overflow-y: auto; text-align: left; background-color: #1e293b; padding: 30px; border-radius: 12px; border: 1px solid #475569; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #475569; padding-bottom: 15px; margin-bottom: 20px;">
+                        <h2 style="margin: 0; color: #ffffff;">Fault Report: <span id="report-id"></span></h2>
+                        <button id="close-report-modal" style="background: none; border: none; color: #cbd5e1; font-size: 2rem; cursor: pointer; line-height: 1;">&times;</button>
+                    </div>
+                    <div id="report-content" style="display: flex; flex-direction: column; gap: 10px; color: #f8fafc;">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- TECHNICIAN SELECTION MODAL -->
+            <div id="tech-select-modal" class="modal hidden" style="z-index: 1000;">
+                <div class="modal-card" style="width: 95%; max-width: 500px; max-height: 80vh; overflow-y: auto; text-align: left; background-color: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #475569; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #475569; padding-bottom: 15px; margin-bottom: 15px;">
+                        <h2 style="margin: 0; color: #ffffff;">Assign Technician</h2>
+                        <button id="close-tech-modal" style="background: none; border: none; color: #cbd5e1; font-size: 2rem; cursor: pointer; line-height: 1;">&times;</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>NAME</th>
+                                    <th>ACTIVE JOBS</th>
+                                    <th>ACTION</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tech-modal-table-body">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top: 15px; text-align: right;">
+                        <button id="btn-clear-tech" class="btn-outline" style="padding: 8px 16px; color: #94a3b8; border-color: #475569;">Clear Assignment</button>
+                    </div>
+                </div>
+            </div>
+
+
 
             <!-- Floating AR Button -->
             <div class="fab-container">
@@ -175,7 +335,7 @@
         </main>
     </div>
 
-    <!-- Your JavaScript Logic -->
+    <!-- JavaScript Logic -->
     <script type="module" src="/static/api.js"></script>
     <script type="module" src="/static/main.js"></script>
     <script type="module" src="/static/ui.js"></script>
