@@ -41,6 +41,14 @@ export async function logout(force = false) {
 }
 
 
+// USERS
+// =====================================================================
+// GET /api/users — returns list of safe user data for name lookups
+export async function getUsers() {
+    return request("GET", "/users");
+}
+
+
 // FAULTS
 // =====================================================================
 

@@ -250,6 +250,25 @@ def logout(request: Request, response: Response, force: bool = False):
 
     return {"message": "Logged out successfully"}
 
+
+# Returns a safe list of users for frontend lookups
+@app.get("/api/users")
+def get_all_users(request: Request):
+    users = read_json("users.json")
+    
+    # Strip sensitive data! Only send id, name, AND role
+    safe_users = [
+        {
+            "id": u["id"], 
+            "first_name": u["first_name"], 
+            "last_name": u["last_name"],
+            "role": u.get("role")  # <-- ADDED THIS LINE
+        } 
+        for u in users
+    ]
+    
+    return safe_users
+
 # FAULT ROUTES ==============================================================================================================================
 
 # Fetches a specific active/assigned fault when a user scans a wall marker in AR
