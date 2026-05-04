@@ -7,7 +7,7 @@ from threading import Lock
 sessions_file = "data/sessions.json"
 session_lock = Lock()
 
-def store_session(session_id: str, user_id: str, expiry_time: datetime):
+def store_session(session_id: str, user_id: str, expiry_time: datetime, csrf_token: str):
     with session_lock:
         sessions = {}
         if os.path.exists(sessions_file) and os.path.getsize(sessions_file) > 0:
@@ -21,20 +21,22 @@ def store_session(session_id: str, user_id: str, expiry_time: datetime):
 
         sessions[session_id] = {
             "user_id": user_id,
-            "expires_at": expiry_time.isoformat()
+            "expires_at": expiry_time.isoformat(),
+            "csrf_token": csrf_token
         }
 
         with open(sessions_file, "w", encoding="utf-8") as f:
             json.dump(sessions, f, indent=4)
 
-def generate_session(user_id: str) -> str:
+def generate_session(user_id: str) -> tuple[str, str]:
     now = datetime.now(UTC)
     expiry_time = now + timedelta(minutes=10)
     session_id = secrets.token_urlsafe(32)
+    csrf_token = secrets.token_urlsafe(32)
 
-    store_session(session_id, user_id, expiry_time)
+    store_session(session_id, user_id, expiry_time, csrf_token)
 
-    return session_id
+    return session_id, csrf_token
 
 def validate_session(provided_id: str) -> dict:
     """
@@ -44,13 +46,14 @@ def validate_session(provided_id: str) -> dict:
     {
         "valid": bool,
         "user_id": str | None,
+        "csrf_token": str| None,
         "error": str | None
     }
     """
 
     with session_lock:
         if not os.path.exists(sessions_file):
-            return {"valid": False, "user_id": None, "error": "No active sessions found"}
+            return {"valid": False, "user_id": None, "csrf_token": None, "error": "No active sessions found"}
         
         with open(sessions_file, "r", encoding="utf-8") as f:
             sessions = json.load(f)
@@ -58,7 +61,7 @@ def validate_session(provided_id: str) -> dict:
         session_data = sessions.get(provided_id)
 
         if not session_data:
-            return {"valid": False, "user_id": None, "error": "Session not found"}
+            return {"valid": False, "user_id": None, "csrf_token": None, "error": "Session not found"}
         
         expiry = datetime.fromisoformat(session_data["expires_at"])
         if datetime.now(UTC) > expiry:
@@ -66,9 +69,9 @@ def validate_session(provided_id: str) -> dict:
             del sessions[provided_id]
             with open(sessions_file, "w", encoding="utf-8") as f:
                 json.dump(sessions, f, indent=4)
-            return {"valid": False, "user_id": user_id, "error": "Session expired"}
+            return {"valid": False, "user_id": user_id, "csrf_token": None, "error": "Session expired"}
         
-        return {"valid": True, "user_id": session_data["user_id"], "error": None}
+        return {"valid": True, "user_id": session_data["user_id"], "csrf_token": session_data.get("csrf_token"), "error": None}
     
 def update_expiry(session_id: str):
     now = datetime.now(UTC)

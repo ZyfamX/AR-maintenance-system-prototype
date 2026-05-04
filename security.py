@@ -29,12 +29,6 @@ def hash_password(password: str) -> str:
 
     return hashed.decode("utf-8")
 
-# Test passwords
-# j.smith_sup
-# print(hash_password("J@Sm!th1")) # $2b$12$IR/e7pUMtLNXw.t7ekRPn.VL7KP6rgZC1SKrtqUbj6Su5KR5hcrey
-# a.davis_tech
-# print(hash_password("A@Dav!s2")) # $2b$12$6DcEOJZ5iXveztiwy3MscuPNPig6D.B8t4g./09vRVQUGRLvIDvCq
-
 # Checks password against password requirements (Requirement NF12)
 def check_password_complexity(password: str) -> bool:
 
@@ -53,10 +47,10 @@ def compute_hash(entry: str, previous_hash: str) -> str:
 
 def get_last_hash(log_file: str) -> str:
 
-    if not os.path.exists(audit_log_file):
+    if not os.path.exists(log_file):
         return "0"
     
-    with open(audit_log_file, "rb") as f:
+    with open(log_file, "rb") as f:
         
         try:
             f.seek(-2, os.SEEK_END)
@@ -86,8 +80,8 @@ def log_system_event(user_id: int | None, action: str, details: str):
     base_entry = {
         "timestamp": datetime.now(UTC).isoformat() + "Z",
         "user_id": user_id,
-        "action": action,
-        "details": details,
+        "action": sanitise_for_log(action),
+        "details": sanitise_for_log(details),
     }
     
     with log_lock:
@@ -105,7 +99,7 @@ def log_system_event(user_id: int | None, action: str, details: str):
         }
 
         with open(audit_log_file, "a", encoding="utf-8") as f:
-            f.write(json.dumps(full_entry) + "\n")
+            f.write(json.dumps(full_entry, sort_keys=True) + "\n")
             
 
 
@@ -190,3 +184,19 @@ def verify_audit_log(log_file: str) -> dict:
     
 
     return {"valid": True, "error": None, "line": None}
+
+
+def sanitise_for_log(text: str) -> str:
+    if not isinstance(text, str):
+        return text
+    
+    text = (
+        text
+        .replace("\\", "\\\\")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t")
+    )
+
+    # Limit text to 500 chars
+    return text[:500]

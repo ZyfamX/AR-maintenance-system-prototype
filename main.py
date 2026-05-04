@@ -36,7 +36,6 @@ def write_json(filename: str, data: list):
 # Middleware for session authentication
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
-
     # Routes that do NOT require authentication
     public_paths = [
         "/api/login",
@@ -63,6 +62,25 @@ async def auth_middleware(request: Request, call_next):
         return JSONResponse(status_code=401, content={"detail": result["error"]})
     
     request.state.user_id = result["user_id"]
+
+    if request.method in ["POST", "PUT", "PATCH", "DELETE"]:
+        csrf_cookie = request.cookies.get("csrf_token")
+        csrf_header = request.headers.get("X-CSRF-Token")
+
+        if not csrf_cookie or not csrf_header:
+            return JSONResponse(status_code=403, content={"detail": "CSRF token missing"})
+        
+        if csrf_cookie != csrf_header:
+            return JSONResponse(status_code=403, content={"detail": "CSRF token invalid"})
+        
+        session_data = validate_session(session_id)
+
+        stored_token = None
+        if session_data["valid"]:
+            if csrf_cookie != session_data["csrf_token"]:
+                return JSONResponse(status_code=403, content={"detail": "CSRF token invalid"})
+
+
     # Update expiry so it only expires after 10 minutes of inactivity
     update_expiry(session_id)
 
@@ -131,7 +149,7 @@ fault_submission_timestamps = {} # Stores {user_id: datetime}
 def login_user(credentials: UserLogin, response: Response):
 
     if len(credentials.password) < 8:
-        raise HTTPException(status_code=401, detail="Password must be at least 8 characters.")
+        raise HTTPException(status_code=401, detail="Invalid username or password.")
 
     users = read_json("users.json")
     now = datetime.now(UTC)
@@ -152,7 +170,7 @@ def login_user(credentials: UserLogin, response: Response):
                 if now < lock_time:
 
                     log_system_event(user["id"], "Blocked_Login", "Attempt to log in to locked account.")
-                    raise HTTPException(status_code=403, detail="Account temporarily locked.")
+                    raise HTTPException(status_code=401, detail="Invalid username or password.")
                 
                 else:
 
@@ -167,13 +185,22 @@ def login_user(credentials: UserLogin, response: Response):
 
                 write_json("users.json", users)
 
-                session_id = generate_session(user["id"])
+                session_id, csrf_token = generate_session(user["id"])
 
                 response.set_cookie(
                     key="session_id",
                     value=session_id,
                     httponly=True,
-                    secure=False, #TODO: should be true for better security but may break some people's testing if they use HTTP
+                    secure=False, # TODO: update to True
+                    samesite="lax",
+                    max_age=600
+                )
+
+                response.set_cookie(
+                    key="csrf_token",
+                    value=csrf_token,
+                    httponly=False,
+                    secure=False, # TODO: update to True
                     samesite="lax",
                     max_age=600
                 )
@@ -239,6 +266,7 @@ def logout(request: Request, response: Response, force: bool = False):
     # 2. Proceed with actual logout (either no tools, or force=True)
     remove_session(session_id)
     response.delete_cookie("session_id")
+    response.delete_cookie("csrf_token")
 
     if user_id:
 

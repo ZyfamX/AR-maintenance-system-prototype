@@ -6,8 +6,8 @@ from typing import Optional
 # USER SCHEMAS ================================================================================================================
 class UserLogin(BaseModel):
     
-    username: str
-    password: str
+    username: str = Field(min_length=3, max_length=50, pattern=r"^[a-zA-Z0-9._-]+$")
+    password: str = Field(min_length=1, max_length=128)
 
 
 class UserOut(BaseModel):
@@ -62,7 +62,6 @@ class FaultOut(BaseModel):
 class ToolScan(BaseModel):
     
     marker_id: str = Field(min_length=3, max_length=50)
-    user_id: int
 
 
 # What the backend sends to the dashboard list (Updated for Fleet Approach)
