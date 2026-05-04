@@ -512,7 +512,8 @@ const setupSupervisorViews = (faults, tools, users, normalizedRole, userId) => {
             let badgeClass = f.status === 'Resolved' ? 'badge-available' : f.status === 'In-Review' ? 'badge-review' : f.status === 'In-Progress' ? 'badge-assigned' : 'badge-active';
             let priorityClass = f.priority?.toUpperCase() === 'HIGH' ? 'badge-high' : f.priority?.toUpperCase() === 'MEDIUM' ? 'badge-medium' : 'badge-low';
             let reportedTime = f.timestamp ? new Date(f.timestamp).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}) : '<span style="color:#64748b;">N/A</span>';
-            tbody.innerHTML += `<tr><td>F-${f.id}</td><td>${f.title}</td><td>${f.location}</td><td><span class="badge ${priorityClass}">${f.priority ? f.priority.toUpperCase() : 'N/A'}</span></td><td><span class="badge ${badgeClass}">${f.status.toUpperCase()}</span></td><td>${getUserName(users, f.reported_by_id)}</td><td>${getUserName(users, f.assigned_to_id)}</td><td>${reportedTime}</td><td><button class="btn-solid btn-view-report" data-id="${f.id}" style="padding: 4px 8px; font-size: 0.75rem; background: #3b82f6;">View Report</button></td></tr>`;
+            
+            tbody.innerHTML += `<tr><td>F-${f.id}</td><td>${f.title}</td><td>${f.location}</td><td><span class="badge ${priorityClass}">${f.priority ? f.priority.toUpperCase() : 'N/A'}</span></td><td><span class="badge ${badgeClass}">${f.status.toUpperCase()}</span></td><td>${getUserName(users, f.reported_by_id)}</td><td>${getUserName(users, f.assigned_to_id)}</td><td>${reportedTime}</td><td><button class="btn-solid btn-view-report" data-id="${f.id}" style="padding: 4px 8px; font-size: 0.75rem; background: #1d4ed8; color: #ffffff;">View Report</button></td></tr>`;
         });
     };
 
@@ -546,7 +547,7 @@ const setupSupervisorViews = (faults, tools, users, normalizedRole, userId) => {
                     <td>${getUserName(users, f.reported_by_id)}</td>
                     <td>${reportedTime}</td>
                     <td>
-                        <select class="select-priority" style="padding: 6px; background: #0f172a; color: white; border: 1px solid #334155; border-radius: 4px; width: 100%;">
+                        <select class="select-priority" style="width: 100%; height: 36px; box-sizing: border-box; padding: 6px; background: #0f172a; color: #f8fafc; border: 1px solid #64748b; border-radius: 4px;">
                             <option value="" disabled selected>-- Select --</option>
                             <option value="High">High</option>
                             <option value="Medium">Medium</option>
@@ -554,17 +555,20 @@ const setupSupervisorViews = (faults, tools, users, normalizedRole, userId) => {
                         </select>
                     </td>
                     <td>
-                        <!-- REPLACED DROPDOWN WITH BUTTON -->
-                        <button class="btn-outline btn-open-tech-modal" data-tech-id="" style="padding: 6px; background: #0f172a; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center;">
+                        <!-- Brightened text color to #e2e8f0 -->
+                        <button class="btn-outline btn-open-tech-modal" data-tech-id="" style="width: 100%; height: 36px; box-sizing: border-box; padding: 6px; background: #0f172a; color: #e2e8f0; border: 1px solid #64748b; border-radius: 4px; text-align: left; display: flex; justify-content: space-between; align-items: center;">
                             <span class="tech-name-display">-- Unassigned --</span>
                             <span>🔍</span>
                         </button>
                     </td>
                     <td>
                         <div style="display: flex; gap: 5px;">
-                            <button class="btn-solid btn-view-modal" data-id="${f.id}" style="padding: 6px 10px; background: #3b82f6; min-width: auto;" title="View Full Report">👁️</button>
-                            <button class="btn-solid btn-approve-fault" data-id="${f.id}" style="padding: 6px 10px; background: #22c55e; min-width: auto;" title="Quick Approve">✓</button>
-                            <button class="btn-solid btn-reject-fault" data-id="${f.id}" style="padding: 6px 10px; background: #ef4444; min-width: auto;" title="Quick Reject">✕</button>
+                            <!-- Deepened to #1d4ed8 (Blue 700) -->
+                            <button class="btn-solid btn-view-modal" data-id="${f.id}" style="padding: 6px 10px; background: #1d4ed8; color: #ffffff; min-width: auto;" title="View Full Report">👁️</button>
+                            <!-- Deepened to #15803d (Green 700) -->
+                            <button class="btn-solid btn-approve-fault" data-id="${f.id}" style="padding: 6px 10px; background: #15803d; color: #ffffff; min-width: auto;" title="Quick Approve">✓</button>
+                            <!-- Deepened to #b91c1c (Red 700) -->
+                            <button class="btn-solid btn-reject-fault" data-id="${f.id}" style="padding: 6px 10px; background: #b91c1c; color: #ffffff; min-width: auto;" title="Quick Reject">✕</button>
                         </div>
                     </td>
                 </tr>`;
@@ -609,7 +613,7 @@ const setupSupervisorViews = (faults, tools, users, normalizedRole, userId) => {
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                         <div>
                             <strong style="color:#ffffff; font-size: 0.9rem;">Set Priority:</strong>
-                            <select id="modal-select-priority" style="width: 100%; padding: 8px; background: #1e293b; color: white; border: 1px solid #475569; border-radius: 4px; margin-top: 5px;">
+                            <select id="modal-select-priority" style="width: 100%; height: 40px; box-sizing: border-box; padding: 8px; background: #1e293b; color: #f8fafc; border: 1px solid #64748b; border-radius: 4px; margin-top: 5px;">
                                 <option value="" disabled selected>-- Select Priority --</option>
                                 <option value="High">High</option>
                                 <option value="Medium">Medium</option>
@@ -618,20 +622,25 @@ const setupSupervisorViews = (faults, tools, users, normalizedRole, userId) => {
                         </div>
                         <div>
                             <strong style="color:#ffffff; font-size: 0.9rem;">Assign Tech:</strong>
-                            <select id="modal-select-tech" style="width: 100%; padding: 8px; background: #1e293b; color: white; border: 1px solid #475569; border-radius: 4px; margin-top: 5px;">
-                                ${techOptions}
-                            </select>
+                            <!-- Brightened text color to #e2e8f0 (Slate 200) for 7:1 contrast -->
+                            <button id="modal-btn-open-tech" class="btn-outline btn-open-tech-modal" data-tech-id="" style="width: 100%; height: 40px; box-sizing: border-box; padding: 8px; background: #1e293b; color: #e2e8f0; border: 1px solid #64748b; border-radius: 4px; margin-top: 5px; text-align: left; display: flex; justify-content: space-between; align-items: center;">
+                                <span class="tech-name-display">-- Unassigned --</span>
+                                <span>🔍</span>
+                            </button>
                         </div>
                     </div>
                     
                     <div style="margin-bottom: 15px;">
                         <strong style="color:#ffffff; font-size: 0.9rem;">Add Note (Required for rejection):</strong>
-                        <textarea id="modal-input-notes" rows="3" placeholder="Enter instructions or rejection reasons here..." style="width: 100%; padding: 8px; background: #1e293b; color: white; border: 1px solid #475569; border-radius: 4px; margin-top: 5px; font-family: inherit; resize: vertical; box-sizing: border-box;"></textarea>
+                        <!-- Lightened border to #64748b for field boundary contrast -->
+                        <textarea id="modal-input-notes" rows="3" placeholder="Enter instructions or rejection reasons here..." style="width: 100%; padding: 8px; background: #1e293b; color: #f8fafc; border: 1px solid #64748b; border-radius: 4px; margin-top: 5px; font-family: inherit; resize: vertical; box-sizing: border-box;"></textarea>
                     </div>
 
                     <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                        <button id="modal-btn-reject" class="btn-solid" data-id="${fault.id}" style="background: #ef4444; width: auto; padding: 8px 20px;">Reject ✕</button>
-                        <button id="modal-btn-approve" class="btn-solid" data-id="${fault.id}" style="background: #22c55e; width: auto; padding: 8px 20px;">Approve ✓</button>
+                        <!-- Deepened to #b91c1c (Red 700) for AAA text contrast -->
+                        <button id="modal-btn-reject" class="btn-solid" data-id="${fault.id}" style="background: #b91c1c; color: #ffffff; width: auto; padding: 8px 20px;">Reject ✕</button>
+                        <!-- Deepened to #15803d (Green 700) for AAA text contrast -->
+                        <button id="modal-btn-approve" class="btn-solid" data-id="${fault.id}" style="background: #15803d; color: #ffffff; width: auto; padding: 8px 20px;">Approve ✓</button>
                     </div>
                 </div>
             `;
@@ -664,9 +673,7 @@ const setupSupervisorViews = (faults, tools, users, normalizedRole, userId) => {
         const btnReject = document.getElementById('modal-btn-reject');
         
         if (btnApprove) {
-
             btnApprove.onclick = async () => {
-
                 const priorityVal = document.getElementById('modal-select-priority').value;
                 const techIdVal = document.getElementById('modal-select-tech').value;
                 const notesVal = document.getElementById('modal-input-notes').value;
@@ -680,19 +687,21 @@ const setupSupervisorViews = (faults, tools, users, normalizedRole, userId) => {
                 btnApprove.disabled = true;
 
                 try {
+                    // FIXED: Use the correct schema status 'In-Progress' when a tech is assigned
+                    const newStatus = techIdVal ? 'In-Progress' : 'Active';
 
-                    const newStatus = techIdVal ? 'Assigned' : 'Active';
-
-                    await updateFault(fault.id, {
+                    // EXACT MATCH to FaultUpdate schema
+                    const payload = {
                         status: newStatus,
                         priority: priorityVal,
                         assigned_to_id: techIdVal ? parseInt(techIdVal) : null,
-                        notes: notesVal ? notesVal : undefined
-                    });
+                        resolved_by_id: null,
+                        notes: notesVal ? notesVal : null
+                    };
 
+                    await updateFault(fault.id, payload);
                     reportModal.classList.add('hidden');
                     loadDashboardData(normalizedRole, userId);
-
                 } catch (error) {
                     alert("Failed to approve: " + error.message);
                     btnApprove.textContent = "Approve ✓";
@@ -702,9 +711,7 @@ const setupSupervisorViews = (faults, tools, users, normalizedRole, userId) => {
         }
 
         if (btnReject) {
-
             btnReject.onclick = async () => {
-
                 const notesVal = document.getElementById('modal-input-notes').value;
 
                 if (!notesVal.trim()) {
@@ -716,15 +723,18 @@ const setupSupervisorViews = (faults, tools, users, normalizedRole, userId) => {
                 btnReject.disabled = true;
 
                 try {
-                    await updateFault(fault.id, {
+                    // EXACT MATCH to FaultUpdate schema
+                    const payload = {
                         status: 'Resolved',
                         priority: 'Low',
+                        assigned_to_id: null,
+                        resolved_by_id: null,
                         notes: `[REJECTED]: ${notesVal}`
-                    });
+                    };
 
+                    await updateFault(fault.id, payload);
                     reportModal.classList.add('hidden');
                     loadDashboardData(normalizedRole, userId);
-
                 } catch (error) {
                     alert("Failed to reject: " + error.message);
                     btnReject.textContent = "Reject ✕";
@@ -732,7 +742,6 @@ const setupSupervisorViews = (faults, tools, users, normalizedRole, userId) => {
                 }
             };
         }
-
 
         reportModal.classList.remove('hidden');
 
@@ -794,7 +803,7 @@ const setupSupervisorViews = (faults, tools, users, normalizedRole, userId) => {
 
             technicians.forEach(t => {
 
-                // Calculate Workload dynamically!
+                // Calculate Workload dynamically
                 const activeJobs = faults.filter(f => f.assigned_to_id === t.id && ['Active', 'In-Progress'].includes(f.status)).length;
 
                 let workloadBadge = activeJobs > 3 ? 'badge-high' : activeJobs > 0 ? 'badge-assigned' : 'badge-available';
@@ -804,7 +813,8 @@ const setupSupervisorViews = (faults, tools, users, normalizedRole, userId) => {
                         <td style="color: white; font-weight: bold;">${t.first_name} ${t.last_name}</td>
                         <td><span class="badge ${workloadBadge}">${activeJobs} Jobs</span></td>
                         <td>
-                            <button class="btn-solid btn-choose-tech" data-tech-id="${t.id}" data-tech-name="${t.first_name} ${t.last_name}" style="padding: 4px 12px; background: #3b82f6; width: auto;">Select</button>
+                            <!-- FIXED: Deepened background to Blue 700 (#1d4ed8) and set text to White (#ffffff) -->
+                            <button class="btn-solid btn-choose-tech" data-tech-id="${t.id}" data-tech-name="${t.first_name} ${t.last_name}" style="padding: 4px 12px; background: #1d4ed8; color: #ffffff; width: auto;">Select</button>
                         </td>
                     </tr>
                 `;
@@ -883,7 +893,6 @@ const setupSupervisorViews = (faults, tools, users, normalizedRole, userId) => {
             }
 
             if (e.target.classList.contains('btn-approve-fault')) {
-
                 const btn = e.target;
                 const faultId = parseInt(btn.getAttribute('data-id'));
                 const row = btn.closest('tr');
@@ -901,17 +910,20 @@ const setupSupervisorViews = (faults, tools, users, normalizedRole, userId) => {
                 btn.disabled = true;
 
                 try {
+                    // FIXED: Use the correct schema status 'In-Progress' when a tech is assigned
+                    const newStatus = techIdVal ? 'In-Progress' : 'Active';
 
-                    const newStatus = techIdVal ? 'Assigned' : 'Active';
-
-                    await updateFault(faultId, {
+                    // EXACT MATCH to FaultUpdate schema
+                    const payload = {
                         status: newStatus,
                         priority: priorityVal,
-                        assigned_to_id: techIdVal ? parseInt(techIdVal) : null
-                    });
+                        assigned_to_id: techIdVal ? parseInt(techIdVal) : null,
+                        resolved_by_id: null,
+                        notes: null
+                    };
 
+                    await updateFault(faultId, payload);
                     loadDashboardData(normalizedRole, userId);
-
                 } catch (error) {
                     alert("Failed to approve: " + error.message);
                     btn.textContent = "✓";
@@ -920,8 +932,8 @@ const setupSupervisorViews = (faults, tools, users, normalizedRole, userId) => {
                 }
             }
 
-            if (e.target.classList.contains('btn-reject-fault')) {
 
+            if (e.target.classList.contains('btn-reject-fault')) {
                 const btn = e.target;
                 const faultId = parseInt(btn.getAttribute('data-id'));
                 
@@ -934,29 +946,31 @@ const setupSupervisorViews = (faults, tools, users, normalizedRole, userId) => {
                 btn.disabled = true;
 
                 try {
-
-                    await updateFault(faultId, {
+                    // EXACT MATCH to FaultUpdate schema
+                    const payload = {
                         status: 'Resolved',
                         priority: 'Low',
+                        assigned_to_id: null,
+                        resolved_by_id: null,
                         notes: reason ? `[REJECTED]: ${reason}` : `[REJECTED]: No reason provided by supervisor.`
-                    });
+                    };
 
+                    await updateFault(faultId, payload);
                     loadDashboardData(normalizedRole, userId);
-
                 } catch (error) {
                     alert("Failed to reject: " + error.message);
                     btn.textContent = "✕";
                     btn.style.opacity = "1";
                     btn.disabled = false;
                 }
-
             }
         };
     }
 
+
     // ALL FAULTS VIEW EVENT DELEGATION
     const faultsTbody = document.getElementById('all-faults-table-body');
-    
+
     if (faultsTbody) {
 
         faultsTbody.onclick = (e) => {

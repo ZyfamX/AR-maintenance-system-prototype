@@ -187,8 +187,8 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                         <h3 style="margin-top: 0; margin-bottom: 0;">MASTER FAULT LOG</h3>
                         <div class="table-controls" style="display: flex; gap: 10px;">
-                            <input type="text" id="search-faults" placeholder="Search faults..." style="padding: 5px; border-radius: 4px; border: 1px solid #334155; background: #1e293b; color: white;">
-                            <select id="filter-faults" style="padding: 5px; border-radius: 4px; border: 1px solid #334155; background: #1e293b; color: white;">
+                            <input type="text" id="search-faults" placeholder="Search faults..." style="padding: 5px; border-radius: 4px; border: 1px solid #64748b; background: #1e293b; color: #f8fafc;">
+                            <select id="filter-faults" style="padding: 5px; border-radius: 4px; border: 1px solid #64748b; background: #1e293b; color: #f8fafc;">
                                 <option value="all">All Statuses</option>
                                 <option value="active">Active</option>
                                 <option value="in-progress">In-Progress</option>
@@ -226,8 +226,8 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                         <h3 style="margin-top: 0; margin-bottom: 0;">MASTER TOOL INVENTORY</h3>
                         <div class="table-controls" style="display: flex; gap: 10px;">
-                            <input type="text" id="search-tools" placeholder="Search tools..." style="padding: 5px; border-radius: 4px; border: 1px solid #334155; background: #1e293b; color: white;">
-                            <select id="filter-tools" style="padding: 5px; border-radius: 4px; border: 1px solid #334155; background: #1e293b; color: white;">
+                            <input type="text" id="search-tools" placeholder="Search tools..." style="padding: 5px; border-radius: 4px; border: 1px solid #64748b; background: #1e293b; color: #f8fafc;">
+                            <select id="filter-tools" style="padding: 5px; border-radius: 4px; border: 1px solid #64748b; background: #1e293b; color: #f8fafc;">
                                 <option value="all">All Statuses</option>
                                 <option value="available">Available</option>
                                 <option value="checked-out">Checked-Out</option>
@@ -269,7 +269,7 @@
                                     <th data-sort="reported">REPORTED BY ↕</th>
                                     <th data-sort="time">TIME ↕</th>
                                     <th>SET PRIORITY</th>
-                                    <th>ASSIGN TECH</th>
+                                    <th>ASSIGN TECHNICIAN</th>
                                     <th>ACTION</th>
                                 </tr>
                             </thead>
@@ -300,7 +300,7 @@
 
 
             <!-- TECHNICIAN SELECTION MODAL -->
-            <div id="tech-select-modal" class="modal hidden" style="z-index: 1000;">
+            <div id="tech-select-modal" class="modal hidden" style="z-index: 99999;">
                 <div class="modal-card" style="width: 95%; max-width: 500px; max-height: 80vh; overflow-y: auto; text-align: left; background-color: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #475569; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #475569; padding-bottom: 15px; margin-bottom: 15px;">
                         <h2 style="margin: 0; color: #ffffff;">Assign Technician</h2>
@@ -321,7 +321,7 @@
                         </table>
                     </div>
                     <div style="margin-top: 15px; text-align: right;">
-                        <button id="btn-clear-tech" class="btn-outline" style="padding: 8px 16px; color: #94a3b8; border-color: #475569;">Clear Assignment</button>
+                        <button id="btn-clear-tech" class="btn-outline" style="padding: 8px 16px; background: transparent; color: #e2e8f0; border: 1px solid #64748b;">Clear Assignment</button>
                     </div>
                 </div>
             </div>
