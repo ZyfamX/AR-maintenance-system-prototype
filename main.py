@@ -173,7 +173,7 @@ def login_user(credentials: UserLogin, response: Response):
                     key="session_id",
                     value=session_id,
                     httponly=True,
-                    secure=False, #TODO: should be true for better security but may break some people's testing if they use HTTP
+                    secure=True,
                     samesite="lax",
                     max_age=600
                 )
