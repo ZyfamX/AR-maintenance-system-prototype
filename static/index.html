@@ -281,10 +281,23 @@
                 </div>
             </div>
 
+
+
+            <!-- ASSIGN TECHNICIANS / WORKLOAD BALANCING -->
             <div id="assign-tech-view" class="sub-view hidden">
-                <div class="table-card"><h3 style="margin-top: 0;">ASSIGN TECHNICIANS</h3></div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin-top: 0; margin-bottom: 0;">WORKLOAD BALANCING</h3>
+                    <span style="color: #94a3b8; font-size: 0.9rem;">Click a technician to view and reassign their active faults.</span>
+                </div>
+                
+                <!-- The Grid Container for the Cards -->
+                <div id="tech-cards-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                    <!-- Populated by JavaScript -->
+                </div>
             </div>
 
+
+            
             <!-- FAULT REPORT MODAL -->
             <div id="fault-report-modal" class="modal hidden">
                 <div class="modal-card" style="width: 95%; max-width: 600px; max-height: 90vh; overflow-y: auto; text-align: left; background-color: #1e293b; padding: 30px; border-radius: 12px; border: 1px solid #475569; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">

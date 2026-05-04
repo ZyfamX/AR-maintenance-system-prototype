@@ -575,6 +575,142 @@ const setupSupervisorViews = (faults, tools, users, normalizedRole, userId) => {
         });
     };
 
+
+    // WORKLOAD BALANCING CARDS (ASSIGN TECH VIEW)
+    const renderAssignTechView = () => {
+
+        const container = document.getElementById('tech-cards-container');
+
+        if (!container) return;
+
+        const technicians = users.filter(u => u.role && u.role.toLowerCase() === 'technician');
+        container.innerHTML = '';
+
+        technicians.forEach(tech => {
+            
+            // Find all active/in-progress faults assigned to this specific tech
+            const techFaults = faults.filter(f => f.assigned_to_id === tech.id && ['Active', 'In-Progress'].includes(f.status));
+            
+            // Calculate workload color
+            let workloadBadge = techFaults.length > 3 ? 'badge-high' : techFaults.length > 0 ? 'badge-assigned' : 'badge-available';
+            
+            // Build the inner HTML for the faults they are working on
+            let faultsHtml = '';
+            if (techFaults.length === 0) {
+
+                faultsHtml = `<div style="color: #64748b; text-align: center; padding: 10px 0;">No active faults assigned.</div>`;
+
+            } else {
+
+                techFaults.forEach(f => {
+
+                    let priorityClass = f.priority?.toUpperCase() === 'HIGH' ? 'badge-high' : f.priority?.toUpperCase() === 'MEDIUM' ? 'badge-medium' : 'badge-low';
+                    
+                    faultsHtml += `
+                        <div class="mini-fault-item">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div>
+                                    <strong style="color: #ffffff;">F-${f.id}: ${f.title}</strong>
+                                    <div style="color: #94a3b8; font-size: 0.8rem; margin-top: 4px;">${f.location}</div>
+                                </div>
+                                <span class="badge ${priorityClass}">${f.priority ? f.priority.toUpperCase() : 'N/A'}</span>
+                            </div>
+                            <button class="btn-outline btn-instant-reassign" data-fault-id="${f.id}" data-current-tech-id="${tech.id}" style="margin-top: 5px; padding: 6px; font-size: 0.8rem; color: #e2e8f0; border-color: #64748b;">
+                                🔄 Reassign to...
+                            </button>
+                        </div>
+                    `;
+                });
+            }
+
+            // Build the Card
+            container.innerHTML += `
+                <div class="tech-card">
+                    <div class="tech-card-header">
+                        <div>
+                            <strong style="color: #ffffff; font-size: 1.1rem;">${tech.first_name} ${tech.last_name}</strong>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <span class="badge ${workloadBadge}">${techFaults.length} Jobs</span>
+                            <span class="expand-icon" style="color: #94a3b8; font-size: 1.2rem; transition: transform 0.2s;">▼</span>
+                        </div>
+                    </div>
+                    <div class="tech-card-body">
+                        ${faultsHtml}
+                    </div>
+                </div>
+            `;
+        });
+    };
+
+    //REASSIGN EVENT DELEGATION
+    const techCardsContainer = document.getElementById('tech-cards-container');
+
+    if (techCardsContainer) {
+
+        techCardsContainer.onclick = (e) => {
+            
+            // Handle Accordion Expand/Collapse
+            const header = e.target.closest('.tech-card-header');
+
+            if (header) {
+
+                const card = header.closest('.tech-card');
+                const icon = header.querySelector('.expand-icon');
+                
+                // Toggle the 'expanded' class
+                card.classList.toggle('expanded');
+                
+                // Flip the arrow
+                if (card.classList.contains('expanded')) {
+                    icon.style.transform = 'rotate(180deg)';
+                } else {
+                    icon.style.transform = 'rotate(0deg)';
+                }
+                return;
+            }
+
+            // Handle the "Reassign" Button
+            const reassignBtn = e.target.closest('.btn-instant-reassign');
+
+            if (reassignBtn) {
+
+                // We use our activeTechAssignBtn variable to "hijack" the existing modal!
+                activeTechAssignBtn = reassignBtn; 
+                
+                // Show the Technician Select Modal
+                const techModal = document.getElementById('tech-select-modal');
+                const techTbody = document.getElementById('tech-modal-table-body');
+                
+                // Populate the modal table
+                const technicians = users.filter(u => u.role && u.role.toLowerCase() === 'technician');
+                techTbody.innerHTML = '';
+
+                technicians.forEach(t => {
+
+                    const activeJobs = faults.filter(f => f.assigned_to_id === t.id && ['Active', 'In-Progress'].includes(f.status)).length;
+                    let workloadBadge = activeJobs > 3 ? 'badge-high' : activeJobs > 0 ? 'badge-assigned' : 'badge-available';
+
+                    techTbody.innerHTML += `
+                        <tr>
+                            <td style="color: white; font-weight: bold;">${t.first_name} ${t.last_name}</td>
+                            <td><span class="badge ${workloadBadge}">${activeJobs} Jobs</span></td>
+                            <td>
+                                <button class="btn-solid btn-choose-tech" data-tech-id="${t.id}" data-tech-name="${t.first_name} ${t.last_name}" style="padding: 4px 12px; background: #1d4ed8; color: #ffffff; width: auto;">Select</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+
+                techModal.classList.remove('hidden');
+
+            }
+        };
+    }
+
+
+
     // MODAL LOGIC
     const reportModal = document.getElementById('fault-report-modal');
     const closeReportBtn = document.getElementById('close-report-modal');
@@ -987,4 +1123,5 @@ const setupSupervisorViews = (faults, tools, users, normalizedRole, userId) => {
     renderAllTools();
     renderAllFaults();
     renderReviewQueue();
+    renderAssignTechView();
 };
