@@ -86,8 +86,8 @@ def log_system_event(user_id: int | None, action: str, details: str):
     base_entry = {
         "timestamp": datetime.now(UTC).isoformat() + "Z",
         "user_id": user_id,
-        "action": action,
-        "details": details,
+        "action": sanitise_for_log(action),
+        "details": sanitise_for_log(details),
     }
     
     with log_lock:
@@ -105,7 +105,7 @@ def log_system_event(user_id: int | None, action: str, details: str):
         }
 
         with open(audit_log_file, "a", encoding="utf-8") as f:
-            f.write(json.dumps(full_entry) + "\n")
+            f.write(json.dumps(full_entry, sort_keys=True) + "\n")
             
 
 
@@ -190,3 +190,19 @@ def verify_audit_log(log_file: str) -> dict:
     
 
     return {"valid": True, "error": None, "line": None}
+
+
+def sanitise_for_log(text: str) -> str:
+    if not isinstance(text, str):
+        return text
+    
+    text = (
+        text
+        .replace("\\", "\\\\")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t")
+    )
+
+    # Limit text to 500 chars
+    return text[:500]
