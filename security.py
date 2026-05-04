@@ -29,12 +29,6 @@ def hash_password(password: str) -> str:
 
     return hashed.decode("utf-8")
 
-# Test passwords
-# j.smith_sup
-# print(hash_password("J@Sm!th1")) # $2b$12$IR/e7pUMtLNXw.t7ekRPn.VL7KP6rgZC1SKrtqUbj6Su5KR5hcrey
-# a.davis_tech
-# print(hash_password("A@Dav!s2")) # $2b$12$6DcEOJZ5iXveztiwy3MscuPNPig6D.B8t4g./09vRVQUGRLvIDvCq
-
 # Checks password against password requirements (Requirement NF12)
 def check_password_complexity(password: str) -> bool:
 

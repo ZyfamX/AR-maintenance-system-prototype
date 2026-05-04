@@ -18,5 +18,135 @@
         "first_name": "Amina",
         "last_name": "Davis",
         "role": "Technician"
+    },
+    {
+        "id": 3,
+        "username": "e.carter_sup",
+        "password_hash": "$2b$12$6seBFrWs2TEFWFMo8DUcre0ZjpAiGIJhIbVtAY0g54A.nSF01ulWC",
+        "failed_attempts": 0,
+        "lock_until": null,
+        "first_name": "Emily",
+        "last_name": "Carter",
+        "role": "Supervisor"
+    },
+    {
+        "id": 4,
+        "username": "j.walker_sup",
+        "password_hash": "$2b$12$EOzIgcE2LNDfDLDH363AH.J9qGnyAfOQrbEB2Pq649cwQwgkMPz1W",
+        "failed_attempts": 0,
+        "lock_until": null,
+        "first_name": "James",
+        "last_name": "Walker",
+        "role": "Supervisor"
+    },
+    {
+        "id": 5,
+        "username": "o.brown_tech",
+        "password_hash": "$2b$12$CNCL.br9uSv08ryCKTXrc.7zMbDxwNpQP33dRZHIqcqoKJ2LbbaFK",
+        "failed_attempts": 0,
+        "lock_until": null,
+        "first_name": "Oliver",
+        "last_name": "Brown",
+        "role": "Technician"
+    },
+    {
+        "id": 6,
+        "username": "s.taylor_tech",
+        "password_hash": "$2b$12$3QCtQktpBgP4zzPtyV.oweoCYB/oJt6r6r8v6E/E3P4w6thu4nz.q",
+        "failed_attempts": 0,
+        "lock_until": null,
+        "first_name": "Sophie",
+        "last_name": "Taylor",
+        "role": "Technician"
+    },
+    {
+        "id": 7,
+        "username": "j.wilson_tech",
+        "password_hash": "$2b$12$/v9lC1A.qSZDUN3EsbZL6OxOqgf1wOR10HQ/6rdnXBGIa2hRQRn6i",
+        "failed_attempts": 0,
+        "lock_until": null,
+        "first_name": "Jack",
+        "last_name": "Wilson",
+        "role": "Technician"
+    },
+    {
+        "id": 8,
+        "username": "o.johnson_tech",
+        "password_hash": "$2b$12$RHS3K2TD4li8ESyDvLvV7elKDPZFWqYHLGiBIldf.H2zTwZWC843G",
+        "failed_attempts": 0,
+        "lock_until": null,
+        "first_name": "Olivia",
+        "last_name": "Johnson",
+        "role": "Technician"
+    },
+    {
+        "id": 9,
+        "username": "h.evans_tech",
+        "password_hash": "$2b$12$m7JGEPKrTufq2IwQeSt.POrmQbq.zXa//2IOaZAvW3zkPmO.E1yFa",
+        "failed_attempts": 0,
+        "lock_until": null,
+        "first_name": "Harry",
+        "last_name": "Evans",
+        "role": "Technician"
+    },
+    {
+        "id": 10,
+        "username": "a.thomas_tech",
+        "password_hash": "$2b$12$WgYcMsd8yF/wzNKL3hEc6em/QTFFtyvOcrH/GhJ20T7n0Y6hYKAX.",
+        "failed_attempts": 0,
+        "lock_until": null,
+        "first_name": "Amelia",
+        "last_name": "Thomas",
+        "role": "Technician"
+    },
+    {
+        "id": 11,
+        "username": "g.clarke_tech",
+        "password_hash": "$2b$12$SdXUZfb0D/2LDYFeF7WCZekdP5lHC7pbTlLQuIwiqw74VBPXLLpPW",
+        "failed_attempts": 0,
+        "lock_until": null,
+        "first_name": "George",
+        "last_name": "Clarke",
+        "role": "Technician"
+    },
+    {
+        "id": 12,
+        "username": "i.roberts_tech",
+        "password_hash": "$2b$12$mJjREUzYLLlEADBrlKDMhuQQ6VoEZkzcO6ZW9A.tiwl8vPNzJn8J.",
+        "failed_attempts": 0,
+        "lock_until": null,
+        "first_name": "Isla",
+        "last_name": "Roberts",
+        "role": "Technician"
+    },
+    {
+        "id": 13,
+        "username": "t.hughes_tech",
+        "password_hash": "$2b$12$f2tgQIeu2p3imGdbL85ApuawXEctKxuppEYJ2Avgf8ownbiCpccKm",
+        "failed_attempts": 0,
+        "lock_until": null,
+        "first_name": "Thomas",
+        "last_name": "Hughes",
+        "role": "Technician"
+    },
+    {
+        "id": 14,
+        "username": "m.lewis_tech",
+        "password_hash": "$2b$12$nCYyDDnqIIQOTleBNd4Hs.aJhBnTXwnVxZQ49EOua1LSRgJeaTxz6",
+        "failed_attempts": 0,
+        "lock_until": null,
+        "first_name": "Mia",
+        "last_name": "Lewis",
+        "role": "Technician"
+    },
+    {
+        "id": 15,
+        "username": "n.young_tech",
+        "password_hash": "$2b$12$F1vs7FuQRi3oUwdhakOZx.Wrt5DluMsOCaPG3G8UpgKtkPEWGyheu",
+        "failed_attempts": 0,
+        "lock_until": null,
+        "first_name": "Noah",
+        "last_name": "Young",
+        "role": "Technician"
     }
 ]
