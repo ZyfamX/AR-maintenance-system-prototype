@@ -1,5 +1,16 @@
 const BASE_URL = "/api";
 
+function getCookie(name) {
+    const cookies = document.cookie.split("; ");
+    for (const cookie of cookies) {
+        const index = cookie.indexOf("=");
+        const key = cookie.substring(0, index);
+        const value = cookie.substring(index + 1);
+        if (key === name) return value;
+    }
+    return null;
+}
+
 // Helper: sends a request and returns parsed JSON, or throws an error with a message
 async function request(method, path, body = null) {
     const options = {
@@ -7,6 +18,12 @@ async function request(method, path, body = null) {
         credentials: "include",
         headers: {},
     };
+
+    const csrfToken = getCookie("csrf_token");
+
+    if (csrfToken && ["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+        options.headers["X-CSRF-Token"] = csrfToken;
+    }
 
     if (body) {
         options.headers["Content-Type"] = "application/json";
