@@ -53,10 +53,10 @@ def compute_hash(entry: str, previous_hash: str) -> str:
 
 def get_last_hash(log_file: str) -> str:
 
-    if not os.path.exists(audit_log_file):
+    if not os.path.exists(log_file):
         return "0"
     
-    with open(audit_log_file, "rb") as f:
+    with open(log_file, "rb") as f:
         
         try:
             f.seek(-2, os.SEEK_END)
