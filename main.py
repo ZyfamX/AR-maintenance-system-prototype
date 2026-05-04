@@ -131,7 +131,7 @@ fault_submission_timestamps = {} # Stores {user_id: datetime}
 def login_user(credentials: UserLogin, response: Response):
 
     if len(credentials.password) < 8:
-        raise HTTPException(status_code=401, detail="Password must be at least 8 characters.")
+        raise HTTPException(status_code=401, detail="Invalid username or password.")
 
     users = read_json("users.json")
     now = datetime.now(UTC)
@@ -152,7 +152,7 @@ def login_user(credentials: UserLogin, response: Response):
                 if now < lock_time:
 
                     log_system_event(user["id"], "Blocked_Login", "Attempt to log in to locked account.")
-                    raise HTTPException(status_code=403, detail="Account temporarily locked.")
+                    raise HTTPException(status_code=401, detail="Invalid username or password.")
                 
                 else:
 
