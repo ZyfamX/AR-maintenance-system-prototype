@@ -62,7 +62,6 @@ class FaultOut(BaseModel):
 class ToolScan(BaseModel):
     
     marker_id: str = Field(min_length=3, max_length=50)
-    user_id: int
 
 
 # What the backend sends to the dashboard list (Updated for Fleet Approach)
