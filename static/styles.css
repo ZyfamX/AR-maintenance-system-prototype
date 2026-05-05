@@ -388,6 +388,7 @@ th { border-bottom: 2px solid #334155; padding: 10px; color: #cbd5e1; font-size:
 td { padding: 12px 10px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
 
 
+
 /* =========================================================
    06. WORKLOAD BALANCING
 ========================================================= */
@@ -450,12 +451,21 @@ td { padding: 12px 10px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
     .tables-row { grid-template-columns: 1fr; }
     .menu-toggle-btn { display: block; }
     
+    /* FIXED: Header Spacing for Mobile */
+    header { padding: 0 15px !important; }
+    #header-role-title { display: none !important; } /* Hides "Technician Dashboard" to make room for the Camera */
+    .header-logo span { font-size: 1.1rem !important; } /* Shrinks the CMS title slightly */
+    
+    /* FIXED: Sidebar Layout */
     .sidebar { 
         position: fixed; 
         top: 90px; 
         left: -250px; 
         width: 250px; 
-        height: calc(100vh - 90px); 
+        /* By using bottom: 0 instead of a 'vh' calculation, it perfectly fits above the phone's address bar! */
+        bottom: 0; 
+        height: auto; 
+        overflow-y: auto; /* Allows scrolling inside the menu just in case */
         z-index: 2000; 
         transition: left 0.3s ease-in-out; 
         box-shadow: 4px 0 15px rgba(0,0,0,0.5);

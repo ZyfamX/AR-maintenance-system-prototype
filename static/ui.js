@@ -386,7 +386,7 @@ const renderDashboardTables = (visibleFaults, visibleTools, users) => {
 
             return `
                 <tr>
-                    <td>F-${fault.id}</td>
+                    <!-- REMOVED ID COLUMN HERE -->
                     <td>${fault.title}</td>
                     <td>${fault.location}</td>
                     <td><span class="badge ${priorityBadgeClass}">${fault.priority ? fault.priority.toUpperCase() : 'N/A'}</span></td>
@@ -430,6 +430,8 @@ const renderDashboardTables = (visibleFaults, visibleTools, users) => {
         }).join('');
     }
 };
+
+
 
 
 // ============================================================================
@@ -740,7 +742,7 @@ const setupTechnicianViews = (myFaults, allTools, users, normalisedRole, userId)
             const priorityBadgeClass = f.priority?.toUpperCase() === 'HIGH' ? 'badge-high' : f.priority?.toUpperCase() === 'MEDIUM' ? 'badge-medium' : 'badge-low';
             return `
                 <tr>
-                    <td>F-${f.id}</td>
+                    <!-- REMOVED ID COLUMN HERE -->
                     <td>${f.title}</td>
                     <td>${f.location}</td>
                     <td><span class="badge ${priorityBadgeClass}">${f.priority ? f.priority.toUpperCase() : 'N/A'}</span></td>
