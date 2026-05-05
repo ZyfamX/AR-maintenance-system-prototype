@@ -72,14 +72,18 @@
     <div id="dashboard-view" class="view-container dashboard-layout hidden">
         
         <header>
-            <div class="header-logo" style="display: flex; align-items: center;">
-                <!-- The Hamburger Button -->
-                <button id="btn-menu-toggle" class="menu-toggle-btn">≡</button>
-                <span>⚙️ CMS: AR SYSTEM</span>
-                <!-- Dynamic Role Title -->
-                <span id="header-role-title" style="margin-left: 15px; padding-left: 15px; border-left: 1px solid #475569; color: #e2e8f0; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.5px;"></span>
+            
+            <div class="header-logo" style="display: flex; align-items: center; overflow: hidden; white-space: nowrap;">
+                <button id="btn-menu-toggle" class="menu-toggle-btn" style="flex-shrink: 0; margin-right: 10px;">≡</button>
+                <span style="font-weight: 700; color: #f8fafc;">⚙️ CMS: AR SYSTEM</span>
+                <span id="header-role-title" style="margin-left: 15px; padding-left: 15px; border-left: 1px solid #475569; color: #cbd5e1; font-size: 0.95rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis;"></span>
             </div>
-            <div class="header-controls"></div>
+            
+            <div class="header-controls" style="flex-shrink: 0; margin-left: 15px; margin-right: 10px;">
+                <a href="/ar" id="btn-launch-ar" aria-label="Launch AR Scanner" style="background: #f97316; width: 56px; height: 56px; border-radius: 50%; text-decoration: none; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3); transition: transform 0.2s ease;">
+                    <span aria-hidden="true" style="font-size: 2.2rem; transform: translateY(-2px);">📷</span>
+                </a>
+            </div>
         </header>
 
         <nav class="sidebar">
@@ -103,7 +107,7 @@
                             <span class="kpi-value text-orange" id="kpi-active">0</span>
                         </div>
                         <div class="kpi-card card-review">
-                            <span class="kpi-title">Faults To Review</span>
+                            <span class="kpi-title">Faults In Review</span>
                             <span class="kpi-value" style="color: #d8b4fe;" id="kpi-review">0</span>
                         </div>
                         <div class="kpi-card card-progress">
@@ -118,12 +122,12 @@
                         <div class="table-responsive">
                             <table>
                                 <thead>
-                                    <tr style="cursor: pointer; white-space: nowrap;">
-                                        <th data-sort="id">FAULT ID ↕</th>
-                                        <th data-sort="title">TITLE ↕</th>
-                                        <th data-sort="location">LOCATION ↕</th>
-                                        <th data-sort="priority">PRIORITY ↕</th>
-                                        <th data-sort="status">STATUS ↕</th>
+                                    <tr style="white-space: nowrap;">
+                                        <th>FAULT ID</th>
+                                        <th>TITLE</th>
+                                        <th>LOCATION</th>
+                                        <th>PRIORITY</th>
+                                        <th>STATUS</th>
                                     </tr>
                                 </thead>
                                 <tbody id="faults-table-body">
@@ -153,11 +157,12 @@
                         <div class="table-responsive">
                             <table>
                                 <thead>
-                                    <tr style="cursor: pointer; white-space: nowrap;">
-                                        <th data-sort="id">TOOL ID ↕</th>
-                                        <th data-sort="type">TYPE ↕</th>
-                                        <th data-sort="status">STATUS ↕</th>
-                                        <th data-sort="user">CURRENT USER ↕</th>
+                                    <tr style="white-space: nowrap;">
+                                        <th>TOOL ID</th>
+                                        <th>TYPE</th>
+                                        <th>LOCATION</th>
+                                        <th>STATUS</th>
+                                        <th>CURRENT USER</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tools-table-body">
@@ -173,13 +178,67 @@
             <!-- TECHNICIAN VIEWS -->
             <div id="assigned-faults-view" class="sub-view hidden">
                 <div class="table-card">
-                    <h3 style="margin-top: 0;">MY FAULTS</h3>
+                    <h3 style="margin-top: 0; margin-bottom: 15px;">MY FAULTS</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>TITLE</th>
+                                    <th>LOCATION</th>
+                                    <th>PRIORITY</th>
+                                    <th>STATUS</th>
+                                    <th>ACTION</th> 
+                                </tr>
+                            </thead>
+                            <tbody id="tech-faults-tbody">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
             <div id="active-tools-view" class="sub-view hidden">
                 <div class="table-card">
-                    <h3 style="margin-top: 0;">MY TOOLS</h3>
+                    <h3 style="margin-top: 0; margin-bottom: 15px;">MY CHECKED-OUT TOOLS</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>TOOL ID</th>
+                                    <th>TYPE</th>
+                                    <th>STORAGE LOCATION</th>
+                                    <th>CHECKOUT TIME</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tech-tools-tbody">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AVAILABLE TOOLS VIEW -->
+            <div id="available-tools-view" class="sub-view hidden">
+                <div class="table-card">
+                    <h3 style="margin-top: 0; margin-bottom: 15px;">AVAILABLE TOOLS</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>TOOL ID</th>
+                                    <th>TYPE</th>
+                                    <th>STORAGE LOCATION</th>
+                                    <th>STATUS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="avail-tools-tbody">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -222,7 +281,7 @@
                 </div>
             </div>
 
-            <!-- RESTORED: ALL TOOLS VIEW -->
+            <!-- ALL TOOLS VIEW -->
             <div id="all-tools-view" class="sub-view hidden">
                 <div class="table-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -242,6 +301,7 @@
                                 <tr style="cursor: pointer;">
                                     <th data-sort="id">TOOL ID ↕</th>
                                     <th data-sort="type">TYPE ↕</th>
+                                    <th data-sort="location">LOCATION ↕</th>
                                     <th data-sort="status">STATUS ↕</th>
                                     <th data-sort="user">CURRENT USER ↕</th>
                                     <th data-sort="time">CHECKOUT TIME ↕</th>
@@ -331,7 +391,7 @@
                 <div class="modal-card" style="width: 95%; max-width: 600px; max-height: 90vh; overflow-y: auto; text-align: left; background-color: #1e293b; padding: 30px; border-radius: 12px; border: 1px solid #475569; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #475569; padding-bottom: 15px; margin-bottom: 20px;">
                         <h2 style="margin: 0; color: #ffffff;">Fault Report: <span id="report-id"></span></h2>
-                        <button id="close-report-modal" style="background: none; border: none; color: #cbd5e1; font-size: 2rem; cursor: pointer; line-height: 1;">&times;</button>
+                        <button id="close-report-modal" style="background: transparent; border: none; color: #cbd5e1; font-size: 2.5rem; cursor: pointer; line-height: 0.5; padding: 10px; min-width: 48px; min-height: 48px; margin-right: -10px; border-radius: 8px;">&times;</button>
                     </div>
                     <div id="report-content" style="display: flex; flex-direction: column; gap: 10px; color: #f8fafc;">
                         <!-- Populated by JavaScript -->
@@ -367,12 +427,29 @@
                 </div>
             </div>
 
-
-
-            <!-- Floating AR Button -->
-            <div class="fab-container">
-                <a href="/ar" id="btn-launch-ar" class="fab-ar" title="Launch AR Scanner"><span class="icon">📷</span></a>
+            <!-- LOGOUT WARNING MODAL -->
+        <div id="logout-warning-modal" class="modal hidden">
+            <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; width: 90%; max-width: 400px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); text-align: center;">
+                
+                <!-- Warning Icon -->
+                <div style="font-size: 3.5rem; margin-bottom: 15px; line-height: 1;">⚠️</div>
+                
+                <h2 style="margin: 0 0 10px 0; color: #f8fafc; font-size: 1.5rem;">Unreturned Tools!</h2>
+                <p style="color: #cbd5e1; margin-bottom: 25px; line-height: 1.5; font-size: 0.95rem;">
+                    You still have tools checked out under your name. Are you sure you want to log out without returning them?
+                </p>
+                
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <!-- Secondary Cancel Button -->
+                    <button id="btn-cancel-logout" style="flex: 1; background: #334155; color: #f8fafc; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 1rem; border: 1px solid #475569; transition: background 0.2s;">Cancel</button>
+                    
+                    <!-- Primary Destructive Button (Red) -->
+                    <button id="btn-confirm-logout" style="flex: 1; background: #ef4444; color: #ffffff; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 1rem; border: none; transition: background 0.2s;">Log Out</button>
+                </div>
             </div>
+        </div>
+
+
         </main>
     </div>
 

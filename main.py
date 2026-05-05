@@ -120,22 +120,14 @@ def get_active_faults(request: Request):
     return technician_faults
 
 
-# Returns tool status, filtered securely by Role
+
 @app.get("/api/tools", response_model=List[ToolOut])
 def get_all_tools(request: Request):
 
+    # Fetch all tools from the database
     tools = read_json("tools.json")
-    users = read_json("users.json")
-    
-    current_user = next((u for u in users if u["id"] == request.state.user_id), None)
-    
-    if current_user and current_user["role"] in ["Supervisor", "Administrator"]:
-        return tools
-        
-    # Technicians only see tools they currently have checked out
-    technician_tools = [t for t in tools if t.get("current_user_id") == request.state.user_id]
 
-    return technician_tools
+    return tools
 
 
 # USER ROUTE ==============================================================================================================================
