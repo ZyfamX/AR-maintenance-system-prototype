@@ -70,7 +70,8 @@ export function renderSidebar(role) {
     const techMenu = [
         { text: 'DASHBOARD', view: 'dashboard-columns-view' },
         { text: 'MY FAULTS', view: 'assigned-faults-view' },
-        { text: 'MY TOOLS', view: 'active-tools-view' }
+        { text: 'MY TOOLS', view: 'active-tools-view' },
+        { text: 'AVAILABLE TOOLS', view: 'available-tools-view' }
     ];
 
     const supervisorMenu = [
@@ -221,23 +222,32 @@ export async function loadDashboardData(role, userId) {
             if (toolsHeading) toolsHeading.textContent = "TOOL TRACKING LOG";
         }
 
-        updateKPIs(displayFaults, displayTools);
+        updateKPIs(displayFaults, displayTools, tools);
         renderDashboardTables(displayFaults, displayTools, users);
 
         if (['supervisor', 'admin', 'administrator'].includes(normalizedRole)) {
             setupSupervisorViews(faults, tools, users, normalizedRole, userId);
+        } else if (normalizedRole === 'technician') {
+            // CRITICAL: We pass the un-filtered 'tools' array here!
+            setupTechnicianViews(displayFaults, tools, normalizedRole, userId);
         }
     } catch (error) {
         console.error("Failed to load dashboard data:", error);
     }
 }
 
-const updateKPIs = (displayFaults, displayTools) => {
+const updateKPIs = (displayFaults, displayTools, allTools = null) => {
+    
+    // Fallback to displayTools if allTools isn't passed
+    const toolsSource = allTools || displayTools; 
+
     if (document.getElementById('kpi-active')) document.getElementById('kpi-active').textContent = displayFaults.filter(f => f.status === 'Active').length;
     if (document.getElementById('kpi-review')) document.getElementById('kpi-review').textContent = displayFaults.filter(f => f.status === 'In-Review').length;
     if (document.getElementById('kpi-progress')) document.getElementById('kpi-progress').textContent = displayFaults.filter(f => f.status === 'In-Progress').length;
     if (document.getElementById('kpi-tools-out')) document.getElementById('kpi-tools-out').textContent = displayTools.filter(t => t.status === 'Checked-Out').length;
-    if (document.getElementById('kpi-tools-avail')) document.getElementById('kpi-tools-avail').textContent = displayTools.filter(t => t.status === 'Available').length;
+    
+    // Count from the master list (toolsSource), not the technician's personal list
+    if (document.getElementById('kpi-tools-avail')) document.getElementById('kpi-tools-avail').textContent = toolsSource.filter(t => t.status === 'Available').length;
 };
 
 const renderDashboardTables = (displayFaults, displayTools, users) => {
@@ -536,6 +546,157 @@ const renderAssignTechView = (faults, users) => {
             </div>`;
     });
 };
+
+
+// ============================================================================
+// TECHNICIAN CONTROLLER & RENDERERS
+// ============================================================================
+
+const setupTechnicianViews = (myFaults, allTools, normalizedRole, userId) => {
+    
+    // 1. Render My Faults
+    const renderMyFaults = () => {
+        const tbody = document.getElementById('tech-faults-tbody');
+        if (!tbody) return;
+        
+        if (myFaults.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #94a3b8; padding: 20px;">No faults currently assigned. Great job! 🎉</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = myFaults.map(f => {
+            let badgeClass = f.status === 'Resolved' ? 'badge-available' : f.status === 'In-Review' ? 'badge-review' : f.status === 'In-Progress' ? 'badge-assigned' : 'badge-active';
+            let priorityClass = f.priority?.toUpperCase() === 'HIGH' ? 'badge-high' : f.priority?.toUpperCase() === 'MEDIUM' ? 'badge-medium' : 'badge-low';
+            
+            let actionBtn = f.assigned_to_id === userId && f.status === 'In-Progress' 
+                ? `<button class="btn-solid btn-resolve-fault" data-id="${f.id}" style="padding: 4px 12px; background: #15803d; color: #ffffff; width: auto; font-size: 0.8rem; border-radius: 4px;">Mark Resolved</button>`
+                : `<span style="color: #64748b; font-size: 0.85rem;">Pending Review</span>`;
+
+            return `<tr>
+                <td>F-${f.id}</td>
+                <td>${f.title}</td>
+                <td>${f.location}</td>
+                <td><span class="badge ${priorityClass}">${f.priority ? f.priority.toUpperCase() : 'N/A'}</span></td>
+                <td><span class="badge ${badgeClass}">${f.status.toUpperCase()}</span></td>
+                <td>${actionBtn}</td>
+            </tr>`;
+        }).join('');
+    };
+
+    // 2. Render My Checked-Out Tools
+    const renderMyTools = () => {
+        const tbody = document.getElementById('tech-tools-tbody');
+        if (!tbody) return;
+        
+        const myTools = allTools.filter(t => t.current_user_id === userId);
+        
+        if (myTools.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #94a3b8; padding: 20px;">No tools currently checked out.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = myTools.map(t => {
+            let checkoutTime = t.checkout_timestamp ? new Date(t.checkout_timestamp).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}) : 'N/A';
+            return `<tr>
+                <td>${t.id}</td>
+                <td>${t.tool_type}</td>
+                <td>${checkoutTime}</td>
+                <!-- FIXED: Removed the web button, enforcing AR functionality -->
+                <td><span style="color: #94a3b8; font-size: 0.85rem; font-style: italic;">Return via AR Scanner 📷</span></td>
+            </tr>`;
+        }).join('');
+    };
+
+    // 3. Render Available Tools
+    const renderAvailableTools = () => {
+        const tbody = document.getElementById('avail-tools-tbody');
+        if (!tbody) {
+            console.error("Missing avail-tools-tbody in HTML!");
+            return;
+        }
+
+        // FIXED: Bulletproof filter checks if it is explicitly 'available' OR has no assigned user
+        const availTools = allTools.filter(t => !t.current_user_id || (t.status && t.status.trim().toLowerCase() === 'available'));
+
+        if (availTools.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #94a3b8; padding: 20px;">No tools currently available.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = availTools.map(t => {
+            return `<tr>
+                <td>${t.id}</td>
+                <td>${t.tool_type}</td>
+                <td><span class="badge badge-available">AVAILABLE</span></td>
+                <!-- FIXED: Removed the web button, enforcing AR functionality -->
+                <td><span style="color: #94a3b8; font-size: 0.85rem; font-style: italic;">Checkout via AR Scanner 📷</span></td>
+            </tr>`;
+        }).join('');
+    };
+
+    // --- EVENT DELEGATION FOR TECHNICIANS ---
+    
+    // Resolve Fault Action
+    const faultTbody = document.getElementById('tech-faults-tbody');
+    if (faultTbody) {
+        faultTbody.onclick = async (e) => {
+            if (e.target.classList.contains('btn-resolve-fault')) {
+                const faultId = parseInt(e.target.getAttribute('data-id'));
+                e.target.textContent = "⏳";
+                e.target.disabled = true;
+
+                try {
+                    await updateFault(faultId, { status: 'In-Review', resolved_by_id: userId });
+                    loadDashboardData(normalizedRole, userId);
+                } catch (error) {
+                    alert("Failed to update fault: " + error.message);
+                    e.target.textContent = "Mark Resolved";
+                    e.target.disabled = false;
+                }
+            }
+        };
+    }
+
+    // --- KPI DRILLDOWN NAVIGATION (TECHNICIAN) ---
+    // Make the technician's KPI cards clickable shortcuts to their respective views!
+    const navigateToView = (viewId, navText) => {
+        showView(viewId);
+        document.querySelectorAll('.sidebar .nav-item').forEach(btn => {
+            if (btn.textContent === navText) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+    };
+
+    const kpiActive = document.querySelector('.card-active');
+    if (kpiActive) {
+        kpiActive.classList.add('clickable-kpi');
+        kpiActive.onclick = () => navigateToView('assigned-faults-view', 'MY FAULTS');
+    }
+
+    const kpiProgress = document.querySelector('.card-progress');
+    if (kpiProgress) {
+        kpiProgress.classList.add('clickable-kpi');
+        kpiProgress.onclick = () => navigateToView('assigned-faults-view', 'MY FAULTS');
+    }
+
+    const kpiToolsOut = document.querySelector('.card-tools-out');
+    if (kpiToolsOut) {
+        kpiToolsOut.classList.add('clickable-kpi');
+        kpiToolsOut.onclick = () => navigateToView('active-tools-view', 'MY TOOLS');
+    }
+
+    const kpiToolsAvail = document.querySelector('.card-tools-avail');
+    if (kpiToolsAvail) {
+        kpiToolsAvail.classList.add('clickable-kpi');
+        kpiToolsAvail.onclick = () => navigateToView('available-tools-view', 'AVAILABLE TOOLS');
+    }
+
+    // Initialize Views
+    renderMyFaults();
+    renderMyTools();
+    renderAvailableTools();
+};
+
 
 
 // ============================================================================

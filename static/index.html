@@ -173,13 +173,67 @@
             <!-- TECHNICIAN VIEWS -->
             <div id="assigned-faults-view" class="sub-view hidden">
                 <div class="table-card">
-                    <h3 style="margin-top: 0;">MY FAULTS</h3>
+                    <h3 style="margin-top: 0; margin-bottom: 15px;">MY FAULTS</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>TITLE</th>
+                                    <th>LOCATION</th>
+                                    <th>PRIORITY</th>
+                                    <th>STATUS</th>
+                                    <th>ACTION</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tech-faults-tbody">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
             <div id="active-tools-view" class="sub-view hidden">
                 <div class="table-card">
-                    <h3 style="margin-top: 0;">MY TOOLS</h3>
+                    <h3 style="margin-top: 0; margin-bottom: 15px;">MY CHECKED-OUT TOOLS</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>TOOL ID</th>
+                                    <th>TYPE</th>
+                                    <th>CHECKOUT TIME</th>
+                                    <th>ACTION</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tech-tools-tbody">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AVAILABLE TOOLS VIEW -->
+            <div id="available-tools-view" class="sub-view hidden">
+                <div class="table-card">
+                    <h3 style="margin-top: 0; margin-bottom: 15px;">AVAILABLE TOOLS</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>TOOL ID</th>
+                                    <th>TYPE</th>
+                                    <th>STATUS</th>
+                                    <th>ACTION</th>
+                                </tr>
+                            </thead>
+                            <tbody id="avail-tools-tbody">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -222,7 +276,7 @@
                 </div>
             </div>
 
-            <!-- RESTORED: ALL TOOLS VIEW -->
+            <!-- ALL TOOLS VIEW -->
             <div id="all-tools-view" class="sub-view hidden">
                 <div class="table-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
