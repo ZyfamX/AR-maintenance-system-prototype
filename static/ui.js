@@ -485,6 +485,7 @@ const renderReviewQueue = (faults, users) => {
     }).join('');
 };
 
+const expandedTechIds = new Set();
 
 const renderAssignTechView = (faults, users) => {
     const container = document.getElementById('tech-cards-container');
@@ -516,15 +517,17 @@ const renderAssignTechView = (faults, users) => {
                     </div>`;
             }).join('');
 
+        const isExpanded = expandedTechIds.has(tech.id);
+
         container.innerHTML += `
-            <div class="tech-card">
+            <div class="tech-card ${isExpanded ? 'expanded' : ''}" data-tech-id="${tech.id}">
                 <div class="tech-card-header">
                     <div>
                         <strong style="color: #ffffff; font-size: 1.1rem;">${tech.first_name} ${tech.last_name}</strong>
                     </div>
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <span class="badge ${workloadBadge}">${techFaults.length} Jobs</span>
-                        <span class="expand-icon" style="color: #94a3b8; font-size: 1.2rem; transition: transform 0.2s;">▼</span>
+                        <span class="expand-icon" style="color: #94a3b8; font-size: 1.2rem; transition: transform ${isExpanded ? 'rotate(180deg)' : 'rotate(0deg)'};">▼</span>
                     </div>
                 </div>
                 <div class="tech-card-body">
@@ -721,8 +724,16 @@ const setupSupervisorEvents = (faults, tools, users, normalizedRole, userId) => 
             const header = e.target.closest('.tech-card-header');
             if (header) {
                 const card = header.closest('.tech-card');
+                const techId = parseInt(card.getAttribute('data-tech-id'));
                 const icon = header.querySelector('.expand-icon');
                 card.classList.toggle('expanded');
+
+                if (card.classList.contains('expanded')) {
+                    expandedTechIds.add(techId);
+                } else {
+                    expandedTechIds.delete(techId);
+                }
+
                 icon.style.transform = card.classList.contains('expanded') ? 'rotate(180deg)' : 'rotate(0deg)';
                 return;
             }
