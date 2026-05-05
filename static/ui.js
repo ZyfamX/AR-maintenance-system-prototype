@@ -56,15 +56,18 @@ export function renderSidebar(role) {
     const normalizedRole = role ? role.toLowerCase() : '';
     const isSupervisor = ['supervisor', 'admin', 'administrator'].includes(normalizedRole);
 
-    // Dynamic Header Title
+    // Dynamic Role Title
     const headerTitle = document.getElementById('header-role-title');
     if (headerTitle) headerTitle.textContent = isSupervisor ? 'Supervisor Dashboard' : 'Technician Dashboard';
 
-    // Toggle AR Button Visibility
-    const fabContainer = document.querySelector('.fab-container');
-    if (fabContainer) {
-        if (isSupervisor) fabContainer.classList.add('hidden'); 
-        else fabContainer.classList.remove('hidden'); 
+    // Toggle AR Button Visibility for the new Header Button
+    const arButton = document.getElementById('btn-launch-ar');
+    if (arButton) {
+        if (isSupervisor) {
+            arButton.style.display = 'none'; // Hide for Supervisors
+        } else {
+            arButton.style.display = 'flex'; // Show for Technicians
+        }
     }
 
     const techMenu = [
@@ -177,23 +180,50 @@ export function setupEventListeners() {
         modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
     }
 
+    // --- LOGOUT LOGIC & WARNING MODAL ---
     const btnLogout = document.getElementById('btn-logout');
+    const warningModal = document.getElementById('logout-warning-modal');
+    const btnCancelLogout = document.getElementById('btn-cancel-logout');
+    const btnConfirmLogout = document.getElementById('btn-confirm-logout');
+
     if (btnLogout) {
         btnLogout.addEventListener('click', async () => {
             try {
+                // Attempt a normal logout
                 await logout();
                 localStorage.removeItem('ar_user'); 
-                showView('login-view'); 
-                document.getElementById('dashboard-view').classList.add('hidden');
+                window.location.reload(); 
             } catch (error) {
-                if (error.message.includes("WARNING_UNRETURNED_TOOLS") && confirm("You have unreturned tools! Are you sure you want to log out?")) {
-                    await logout(true); 
-                    localStorage.removeItem('ar_user');
-                    showView('login-view');
-                    document.getElementById('dashboard-view').classList.add('hidden');
-                } else alert("Logout failed: " + error.message);
+                // If the backend warns us about unreturned tools...
+                if (error.message.includes("WARNING_UNRETURNED_TOOLS")) {
+                    // FIXED: Show our custom beautiful modal instead of the ugly browser popup!
+                    if (warningModal) warningModal.classList.remove('hidden');
+                } else {
+                    alert("Logout failed: " + error.message);
+                }
             }
         });
+    }
+
+    // Modal Action: User clicked Cancel
+    if (btnCancelLogout && warningModal) {
+        btnCancelLogout.onclick = () => {
+            warningModal.classList.add('hidden'); // Just hide the modal and stay logged in
+        };
+    }
+
+    // Modal Action: User clicked Log Out Anyway
+    if (btnConfirmLogout) {
+        btnConfirmLogout.onclick = async () => {
+            try {
+                // Force the logout with the 'true' override flag
+                await logout(true); 
+                localStorage.removeItem('ar_user');
+                window.location.reload(); 
+            } catch (err) {
+                alert("Force logout failed: " + err.message);
+            }
+        };
     }
 }
 
@@ -228,8 +258,7 @@ export async function loadDashboardData(role, userId) {
         if (['supervisor', 'admin', 'administrator'].includes(normalizedRole)) {
             setupSupervisorViews(faults, tools, users, normalizedRole, userId);
         } else if (normalizedRole === 'technician') {
-            // CRITICAL: We pass the un-filtered 'tools' array here!
-            setupTechnicianViews(displayFaults, tools, normalizedRole, userId);
+            setupTechnicianViews(displayFaults, tools, users, normalizedRole, userId);
         }
     } catch (error) {
         console.error("Failed to load dashboard data:", error);
@@ -312,28 +341,13 @@ const renderDashboardTables = (displayFaults, displayTools, users) => {
                 <tr>
                     <td>${tool.id}</td>
                     <td>${tool.tool_type}</td>
+                    <!-- NEW -->
+                    <td>${tool.storage_location || '<span style="color:#64748b;">Not Assigned</span>'}</td>
                     <td><span class="badge ${toolBadgeClass}">${tool.status.toUpperCase()}</span></td>
                     <td>${userDisplay}</td>
                 </tr>`;
         }).join('');
     }
-
-    // Bind base dashboard sorting
-    document.querySelectorAll('#dashboard-columns-view .column:nth-child(1) th[data-sort]').forEach(th => {
-        th.onclick = () => { 
-            dashFaultsState.sortAsc = (dashFaultsState.sortCol === th.dataset.sort) ? !dashFaultsState.sortAsc : true; 
-            dashFaultsState.sortCol = th.dataset.sort; 
-            renderDashboardTables(displayFaults, displayTools, users); 
-        };
-    });
-
-    document.querySelectorAll('#dashboard-columns-view .column:nth-child(2) th[data-sort]').forEach(th => {
-        th.onclick = () => { 
-            dashToolsState.sortAsc = (dashToolsState.sortCol === th.dataset.sort) ? !dashToolsState.sortAsc : true; 
-            dashToolsState.sortCol = th.dataset.sort; 
-            renderDashboardTables(displayFaults, displayTools, users); 
-        };
-    });
 };
 
 
@@ -372,6 +386,7 @@ const renderAllTools = (tools, users) => {
         switch(toolsState.sortCol) {
             case 'id': valA = a.id; valB = b.id; break;
             case 'type': valA = a.tool_type; valB = b.tool_type; break;
+            case 'location': valA = a.storage_location || 'Z'; valB = b.storage_location || 'Z'; break; // <-- ADD THIS LINE
             case 'status': valA = a.status; valB = b.status; break;
             case 'user': valA = getUserName(users, a.current_user_id); valB = getUserName(users, b.current_user_id); break;
             case 'time': valA = a.checkout_timestamp || ''; valB = b.checkout_timestamp || ''; break;
@@ -385,8 +400,17 @@ const renderAllTools = (tools, users) => {
     tbody.innerHTML = processed.map(t => {
         let toolBadgeClass = t.status === 'Available' ? 'badge-available' : 'badge-out';
         let checkoutTime = t.checkout_timestamp ? new Date(t.checkout_timestamp).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}) : '<span style="color:#64748b;">N/A</span>';
-        return `<tr><td>${t.id}</td><td>${t.tool_type}</td><td><span class="badge ${toolBadgeClass}">${t.status.toUpperCase()}</span></td><td>${t.current_user_id ? getUserName(users, t.current_user_id) : '<span style="color:#64748b;">In Storage</span>'}</td><td>${checkoutTime}</td></tr>`;
-    }).join('');
+        return `
+            <tr>
+                <td>${t.id}</td>
+                <td>${t.tool_type}</td>
+                <!-- NEW -->
+                <td>${t.storage_location || '<span style="color:#64748b;">Not Assigned</span>'}</td>
+                <td><span class="badge ${toolBadgeClass}">${t.status.toUpperCase()}</span></td>
+                <td>${t.current_user_id ? getUserName(users, t.current_user_id) : '<span style="color:#64748b;">In Storage</span>'}</td>
+                <td>${checkoutTime}</td>
+            </tr>`;
+    }).join('');;
 };
 
 const renderAllFaults = (faults, users) => {
@@ -552,9 +576,9 @@ const renderAssignTechView = (faults, users) => {
 // TECHNICIAN CONTROLLER & RENDERERS
 // ============================================================================
 
-const setupTechnicianViews = (myFaults, allTools, normalizedRole, userId) => {
+const setupTechnicianViews = (myFaults, allTools, users, normalizedRole, userId) => {
     
-    // 1. Render My Faults
+    // Render My Faults
     const renderMyFaults = () => {
         const tbody = document.getElementById('tech-faults-tbody');
         if (!tbody) return;
@@ -568,22 +592,19 @@ const setupTechnicianViews = (myFaults, allTools, normalizedRole, userId) => {
             let badgeClass = f.status === 'Resolved' ? 'badge-available' : f.status === 'In-Review' ? 'badge-review' : f.status === 'In-Progress' ? 'badge-assigned' : 'badge-active';
             let priorityClass = f.priority?.toUpperCase() === 'HIGH' ? 'badge-high' : f.priority?.toUpperCase() === 'MEDIUM' ? 'badge-medium' : 'badge-low';
             
-            let actionBtn = f.assigned_to_id === userId && f.status === 'In-Progress' 
-                ? `<button class="btn-solid btn-resolve-fault" data-id="${f.id}" style="padding: 4px 12px; background: #15803d; color: #ffffff; width: auto; font-size: 0.8rem; border-radius: 4px;">Mark Resolved</button>`
-                : `<span style="color: #64748b; font-size: 0.85rem;">Pending Review</span>`;
-
+            // Render the secure View Report button
             return `<tr>
                 <td>F-${f.id}</td>
                 <td>${f.title}</td>
                 <td>${f.location}</td>
                 <td><span class="badge ${priorityClass}">${f.priority ? f.priority.toUpperCase() : 'N/A'}</span></td>
                 <td><span class="badge ${badgeClass}">${f.status.toUpperCase()}</span></td>
-                <td>${actionBtn}</td>
+                <td><button class="btn-solid btn-view-report" data-id="${f.id}" style="padding: 4px 8px; font-size: 0.75rem; background: #1d4ed8; color: #ffffff; border: none; border-radius: 4px; cursor: pointer;">View Report</button></td>
             </tr>`;
         }).join('');
     };
 
-    // 2. Render My Checked-Out Tools
+    // Render My Checked-Out Tools
     const renderMyTools = () => {
         const tbody = document.getElementById('tech-tools-tbody');
         if (!tbody) return;
@@ -600,22 +621,17 @@ const setupTechnicianViews = (myFaults, allTools, normalizedRole, userId) => {
             return `<tr>
                 <td>${t.id}</td>
                 <td>${t.tool_type}</td>
+                <td>${t.storage_location || '<span style="color:#64748b;">Not Assigned</span>'}</td>
                 <td>${checkoutTime}</td>
-                <!-- FIXED: Removed the web button, enforcing AR functionality -->
-                <td><span style="color: #94a3b8; font-size: 0.85rem; font-style: italic;">Return via AR Scanner 📷</span></td>
             </tr>`;
         }).join('');
     };
 
-    // 3. Render Available Tools
+    // Render Available Tools
     const renderAvailableTools = () => {
         const tbody = document.getElementById('avail-tools-tbody');
-        if (!tbody) {
-            console.error("Missing avail-tools-tbody in HTML!");
-            return;
-        }
+        if (!tbody) return;
 
-        // FIXED: Bulletproof filter checks if it is explicitly 'available' OR has no assigned user
         const availTools = allTools.filter(t => !t.current_user_id || (t.status && t.status.trim().toLowerCase() === 'available'));
 
         if (availTools.length === 0) {
@@ -627,38 +643,25 @@ const setupTechnicianViews = (myFaults, allTools, normalizedRole, userId) => {
             return `<tr>
                 <td>${t.id}</td>
                 <td>${t.tool_type}</td>
+                <td>${t.storage_location || '<span style="color:#64748b;">Not Assigned</span>'}</td>
                 <td><span class="badge badge-available">AVAILABLE</span></td>
-                <!-- FIXED: Removed the web button, enforcing AR functionality -->
-                <td><span style="color: #94a3b8; font-size: 0.85rem; font-style: italic;">Checkout via AR Scanner 📷</span></td>
             </tr>`;
         }).join('');
     };
 
     // --- EVENT DELEGATION FOR TECHNICIANS ---
-    
-    // Resolve Fault Action
     const faultTbody = document.getElementById('tech-faults-tbody');
     if (faultTbody) {
-        faultTbody.onclick = async (e) => {
-            if (e.target.classList.contains('btn-resolve-fault')) {
-                const faultId = parseInt(e.target.getAttribute('data-id'));
-                e.target.textContent = "⏳";
-                e.target.disabled = true;
-
-                try {
-                    await updateFault(faultId, { status: 'In-Review', resolved_by_id: userId });
-                    loadDashboardData(normalizedRole, userId);
-                } catch (error) {
-                    alert("Failed to update fault: " + error.message);
-                    e.target.textContent = "Mark Resolved";
-                    e.target.disabled = false;
-                }
+        faultTbody.onclick = (e) => {
+            const viewBtn = e.target.closest('.btn-view-report');
+            if (viewBtn) {
+                const faultId = parseInt(viewBtn.getAttribute('data-id'));
+                openFaultModal(faultId, myFaults, users, normalizedRole, userId);
             }
         };
     }
 
     // --- KPI DRILLDOWN NAVIGATION (TECHNICIAN) ---
-    // Make the technician's KPI cards clickable shortcuts to their respective views!
     const navigateToView = (viewId, navText) => {
         showView(viewId);
         document.querySelectorAll('.sidebar .nav-item').forEach(btn => {
@@ -667,10 +670,14 @@ const setupTechnicianViews = (myFaults, allTools, normalizedRole, userId) => {
         });
     };
 
+    // Hide Active Faults
     const kpiActive = document.querySelector('.card-active');
-    if (kpiActive) {
-        kpiActive.classList.add('clickable-kpi');
-        kpiActive.onclick = () => navigateToView('assigned-faults-view', 'MY FAULTS');
+    if (kpiActive) kpiActive.style.display = 'none';
+
+    const kpiReview = document.querySelector('.card-review');
+    if (kpiReview) {
+        kpiReview.classList.add('clickable-kpi');
+        kpiReview.onclick = () => navigateToView('assigned-faults-view', 'MY FAULTS');
     }
 
     const kpiProgress = document.querySelector('.card-progress');
@@ -690,6 +697,19 @@ const setupTechnicianViews = (myFaults, allTools, normalizedRole, userId) => {
         kpiToolsAvail.classList.add('clickable-kpi');
         kpiToolsAvail.onclick = () => navigateToView('available-tools-view', 'AVAILABLE TOOLS');
     }
+
+
+    // --- MODAL CLOSING LOGIC FOR TECHNICIANS ---
+    const reportModal = document.getElementById('fault-report-modal');
+    const closeReportBtn = document.getElementById('close-report-modal');
+    
+    if (closeReportBtn && reportModal) {
+        closeReportBtn.onclick = () => reportModal.classList.add('hidden');
+        reportModal.onclick = (e) => { 
+            if (e.target === reportModal) reportModal.classList.add('hidden'); 
+        };
+    }
+
 
     // Initialize Views
     renderMyFaults();
@@ -725,7 +745,10 @@ const openFaultModal = (faultId, faults, users, normalizedRole, userId) => {
         </div>
     `;
 
-    if (fault.status === 'In-Review') {
+    // Check the user's role. Only Supervisors get the interactive buttons
+    const isSupervisor = ['supervisor', 'admin', 'administrator'].includes(normalizedRole);
+
+    if (fault.status === 'In-Review' && isSupervisor) {
         staticNotes = ''; 
         interactiveSection = `
             <div style="margin-top: 15px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155;">
@@ -1095,6 +1118,21 @@ const setupSupervisorEvents = (faults, tools, users, normalizedRole, userId) => 
             if (e.target.classList.contains('btn-view-report')) openFaultModal(parseInt(e.target.getAttribute('data-id')), faults, users, normalizedRole, userId);
         };
     }
+
+
+    // --- EVENT DELEGATION FOR TECHNICIANS ---
+    const faultTbody = document.getElementById('tech-faults-tbody');
+    if (faultTbody) {
+        faultTbody.onclick = (e) => {
+            if (e.target.classList.contains('btn-view-report')) {
+                const faultId = parseInt(e.target.getAttribute('data-id'));
+                // Opens the modal securely!
+                openFaultModal(faultId, myFaults, users, normalizedRole, userId);
+            }
+        };
+    }
+
+
 
     // --- KPI DRILLDOWN NAVIGATION ---
     const navigateToView = (viewId, navText) => {
