@@ -227,8 +227,35 @@ header { grid-area: header; background-color: #0f172a; display: flex; justify-co
 /* Sidebar */
 .menu-toggle-btn { display: none; background: transparent; border: none; color: white; font-size: 2rem; cursor: pointer; min-width: 48px; min-height: 48px; padding: 0; margin-right: 10px;text-align: center; }
 .sidebar { grid-area: sidebar; background-color: #0f172a; border-right: 1px solid #334155; padding-top: 20px; display: flex; flex-direction: column; }
-.nav-item { padding: 15px 20px; display: block; width: 100%; text-align: left; background: transparent; border: none; color: #cbd5e1; font-size: 1rem; border-radius: 0; border-left: 4px solid transparent; }
-.nav-item:hover, .nav-item.active { background-color: #334155; color: white; border-left-color: #3b82f6; }
+
+/* AAA-COMPLIANT PILL BUTTONS */
+.nav-item { 
+    padding: 12px 16px; 
+    margin: 8px 15px; 
+    display: block; 
+    width: calc(100% - 30px); 
+    text-align: left; 
+    background-color: #1e293b; /* Slightly lighter than the background */
+    border: 1px solid #475569; /* Visible AAA-compliant border boundary */
+    color: #f8fafc; /* Brightest white for AAA text contrast */
+    font-size: 0.95rem; 
+    font-weight: bold;
+    border-radius: 8px; 
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.nav-item:hover { 
+    background-color: #334155; 
+    border-color: #64748b; /* Brighten border on hover */
+}
+
+.nav-item.active { 
+    background-color: #1d4ed8; /* AAA Compliant Deep Blue */
+    color: #ffffff; 
+    border: 1px solid #60a5fa; /* Crisp light blue border for active state */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+}
 
 /* Main Content Area */
 .main-content { grid-area: main; padding: 20px 20px 100px 20px; overflow-y: auto; background-color: #0f172a; }
