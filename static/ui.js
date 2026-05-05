@@ -940,31 +940,31 @@ const setupSupervisorEvents = (faults, tools, users, normalizedRole, userId) => 
 
     const kpiActive = document.querySelector('.card-active');
     if (kpiActive) {
-        kpiActive.style.cursor = 'pointer';
+        kpiActive.classList.add('clickable-kpi'); // FIXED: Added sleek CSS class
         kpiActive.onclick = () => { applyKpiFilter('filter-faults', 'active', faultsState, () => renderAllFaults(faults, users)); navigateToView('all-faults-view', 'ALL FAULTS'); };
     }
 
     const kpiReview = document.querySelector('.card-review');
     if (kpiReview) {
-        kpiReview.style.cursor = 'pointer';
+        kpiReview.classList.add('clickable-kpi'); // FIXED: Added sleek CSS class
         kpiReview.onclick = () => navigateToView('review-faults-view', 'FAULTS TO REVIEW');
     }
 
     const kpiProgress = document.querySelector('.card-progress');
     if (kpiProgress) {
-        kpiProgress.style.cursor = 'pointer';
+        kpiProgress.classList.add('clickable-kpi'); // FIXED: Added sleek CSS class
         kpiProgress.onclick = () => { applyKpiFilter('filter-faults', 'in-progress', faultsState, () => renderAllFaults(faults, users)); navigateToView('all-faults-view', 'ALL FAULTS'); };
     }
 
     const kpiToolsOut = document.querySelector('.card-tools-out');
     if (kpiToolsOut) {
-        kpiToolsOut.style.cursor = 'pointer';
+        kpiToolsOut.classList.add('clickable-kpi'); // FIXED: Added sleek CSS class
         kpiToolsOut.onclick = () => { applyKpiFilter('filter-tools', 'checked-out', toolsState, () => renderAllTools(tools, users)); navigateToView('all-tools-view', 'ALL TOOLS'); };
     }
 
     const kpiToolsAvail = document.querySelector('.card-tools-avail');
     if (kpiToolsAvail) {
-        kpiToolsAvail.style.cursor = 'pointer';
+        kpiToolsAvail.classList.add('clickable-kpi'); // FIXED: Added sleek CSS class
         kpiToolsAvail.onclick = () => { applyKpiFilter('filter-tools', 'available', toolsState, () => renderAllTools(tools, users)); navigateToView('all-tools-view', 'ALL TOOLS'); };
     }
 };

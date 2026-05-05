@@ -284,7 +284,17 @@ header { grid-area: header; background-color: #0f172a; display: flex; justify-co
 
 .kpi-title, .kpi-value { position: relative; z-index: 2; }
 
-.kpi-title { font-size: 0.85rem; color: #cbd5e1; text-transform: uppercase; margin-bottom: 10px; }
+.kpi-title { 
+    display: block;
+    font-size: 0.85rem; 
+    color: #cbd5e1; 
+    text-transform: uppercase; 
+    margin-bottom: 10px; 
+    padding-right: 35px; 
+    line-height: 1.3;
+    min-height: 2.6em; 
+}
+
 .kpi-value { font-size: 2.5rem; font-weight: bold; }
 
 /* The Base Icon Styling */
@@ -335,6 +345,42 @@ header { grid-area: header; background-color: #0f172a; display: flex; justify-co
 .text-orange { color: #fdba74; } 
 .text-blue { color: #93c5fd; } 
 .text-green { color: #86efac; } 
+
+/* =========================================================
+   CLICKABLE KPI CARDS (SUPERVISOR DRILL-DOWN)
+========================================================= */
+.clickable-kpi {
+    cursor: pointer;
+    border: 1px solid #475569 !important; /* AAA compliant boundary */
+    transition: all 0.2s ease;
+}
+
+.clickable-kpi:hover {
+    background-color: #334155;
+    border-color: #64748b !important;
+    transform: translateY(-2px); /* Smooth lifting effect */
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
+}
+
+
+.clickable-kpi::before {
+    content: '➔';
+    position: absolute;
+    top: 10px; /* FIXED: Decreased from 15px to push it slightly higher */
+    right: 15px;
+    font-size: 2.2rem; /* FIXED: Increased from 1.8rem to make it bigger */
+    font-weight: bold; 
+    color: #93c5fd; 
+    z-index: 3;
+    transition: all 0.2s ease;
+}
+
+.clickable-kpi:hover::before {
+    transform: translateX(6px);
+    color: #ffffff;
+}
+
+
 
 /* Tables Area */
 .table-card { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); overflow-x: auto; flex-grow: 1; }
