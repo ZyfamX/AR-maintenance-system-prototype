@@ -415,6 +415,7 @@ const renderAllFaults = (faults, users) => {
     }).join('');
 };
 
+
 const renderReviewQueue = (faults, users) => {
     const tbody = document.getElementById('review-faults-table-body');
     if (!tbody) return;
@@ -430,6 +431,7 @@ const renderReviewQueue = (faults, users) => {
             case 'location': valA = a.location; valB = b.location; break;
             case 'reported': valA = getUserName(users, a.reported_by_id); valB = getUserName(users, b.reported_by_id); break;
             case 'time': valA = a.timestamp || ''; valB = b.timestamp || ''; break;
+            case 'priority': valA = a.priority || 'Z'; valB = b.priority || 'Z'; break; // NEW: Added sorting for priority
             default: valA = a.id; valB = b.id;
         }
         if (valA < valB) return reviewState.sortAsc ? -1 : 1;
@@ -438,12 +440,17 @@ const renderReviewQueue = (faults, users) => {
     });
 
     if (reviewFaults.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: #94a3b8;">No faults pending review. Great job! 🎉</td></tr>';
+        // FIXED: Increased colspan to 9 to match the new column count
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 30px; color: #94a3b8;">No faults pending review. Great job! 🎉</td></tr>';
         return;
     }
 
     tbody.innerHTML = reviewFaults.map(f => {
         let reportedTime = f.timestamp ? new Date(f.timestamp).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'}) : '<span style="color:#64748b;">N/A</span>';
+        
+        // NEW: Grab the recommended priority and format it into a badge
+        let priorityClass = f.priority?.toUpperCase() === 'HIGH' ? 'badge-high' : f.priority?.toUpperCase() === 'MEDIUM' ? 'badge-medium' : 'badge-low';
+        
         return `
             <tr>
                 <td>F-${f.id}</td>
@@ -451,6 +458,8 @@ const renderReviewQueue = (faults, users) => {
                 <td>${f.location}</td>
                 <td>${getUserName(users, f.reported_by_id)}</td>
                 <td>${reportedTime}</td>
+                <!-- NEW: Inject the Recommended Priority Badge -->
+                <td><span class="badge ${priorityClass}">${f.priority ? f.priority.toUpperCase() : 'N/A'}</span></td>
                 <td>
                     <select class="select-priority" style="width: 100%; height: 36px; box-sizing: border-box; padding: 6px; background: #0f172a; color: #f8fafc; border: 1px solid #64748b; border-radius: 4px;">
                         <option value="" disabled selected>-- Select --</option>
@@ -475,6 +484,7 @@ const renderReviewQueue = (faults, users) => {
             </tr>`;
     }).join('');
 };
+
 
 const renderAssignTechView = (faults, users) => {
     const container = document.getElementById('tech-cards-container');
@@ -541,6 +551,9 @@ const openFaultModal = (faultId, faults, users, normalizedRole, userId) => {
     let priorityClass = fault.priority?.toUpperCase() === 'HIGH' ? 'badge-high' : fault.priority?.toUpperCase() === 'MEDIUM' ? 'badge-medium' : 'badge-low';
     let badgeClass = fault.status === 'Resolved' ? 'badge-available' : fault.status === 'In-Review' ? 'badge-review' : fault.status === 'In-Progress' ? 'badge-assigned' : 'badge-active';
 
+    // Dynamic label based on fault status
+    let priorityLabel = fault.status === 'In-Review' ? 'Rec. Priority:' : 'Priority:';
+
     let interactiveSection = '';
     let staticNotes = `
         <div style="margin-top: 5px;">
@@ -591,7 +604,7 @@ const openFaultModal = (faultId, faults, users, normalizedRole, userId) => {
             <div><strong style="color:#ffffff;">Title:</strong> <br>${fault.title}</div>
             <div><strong style="color:#ffffff;">Location:</strong> <br>${fault.location}</div>
             <div><strong style="color:#ffffff;">Status:</strong> <br><span class="badge ${badgeClass}" style="margin-top:4px; display:inline-block;">${fault.status.toUpperCase()}</span></div>
-            <div><strong style="color:#ffffff;">Priority:</strong> <br><span class="badge ${priorityClass}" style="margin-top:4px; display:inline-block;">${fault.priority ? fault.priority.toUpperCase() : 'N/A'}</span></div>
+            <div><strong style="color:#ffffff;">${priorityLabel}</strong> <br><span class="badge ${priorityClass}" style="margin-top:4px; display:inline-block;">${fault.priority ? fault.priority.toUpperCase() : 'N/A'}</span></div>
             <div><strong style="color:#ffffff;">Reported By:</strong> <br>${getUserName(users, fault.reported_by_id)}</div>
             <div><strong style="color:#ffffff;">Assigned To:</strong> <br>${getUserName(users, fault.assigned_to_id)}</div>
             <div><strong style="color:#ffffff;">Resolved By:</strong> <br>${getUserName(users, fault.resolved_by_id)}</div>

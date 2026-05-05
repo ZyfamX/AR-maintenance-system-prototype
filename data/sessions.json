@@ -259,7 +259,12 @@
     },
     "5ZQ6oFvh8mchKWLina_JIKcTtmdVeCUqeHXScCTjs40": {
         "user_id": 1,
-        "expires_at": "2026-05-05T11:57:19.963535+00:00",
+        "expires_at": "2026-05-05T12:01:22.348637+00:00",
         "csrf_token": "NEwM9WHvcKR9DTij9SXJVdjB_QaoFehRv0zx3Y46H0U"
+    },
+    "VRE0kTEyt8imKaNxfSGpIkP9wkgWbFgynbZ9HE2XvJw": {
+        "user_id": 4,
+        "expires_at": "2026-05-05T12:12:03.443531+00:00",
+        "csrf_token": "iW7E_xPP3I0p4IKc3R-xVq2QgZTmrNoe2FBPU_wql1o"
     }
 }
