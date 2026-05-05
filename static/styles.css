@@ -1,6 +1,20 @@
 /* =========================================================
-   BASE STYLES & ACCESSIBILITY
+   AR MAINTENANCE SYSTEM - MASTER STYLESHEET
+   
+   TABLE OF CONTENTS:
+   01. BASE STYLES & UTILITIES
+   02. GLOBAL COMPONENTS (Buttons, Forms, Modals, Badges, FAB)
+   03. LOGIN SCREEN
+   04. DASHBOARD LAYOUT (Grid, Header, Sidebar)
+   05. UI WIDGETS (KPI Cards, Clickable KPIs, Tables)
+   06. WORKLOAD BALANCING (Collapsible Tech Cards)
+   07. MOBILE RESPONSIVENESS
 ========================================================= */
+
+/* =========================================================
+   01. BASE STYLES & UTILITIES
+========================================================= */
+
 *,
 *::before,
 *::after {
@@ -15,8 +29,10 @@ body {
     overflow-x: hidden; 
 }
 
+/* Visibility Utilities */
 .hidden { display: none !important; }
 
+/* View Transitions */
 .view-container {
     position: absolute;
     top: 0;
@@ -33,9 +49,17 @@ body {
     opacity: 0;
 }
 
+/* Text Color Utilities */
+.text-orange { color: #fdba74; } 
+.text-blue { color: #93c5fd; } 
+.text-green { color: #86efac; } 
+
+
 /* =========================================================
-   BUTTONS
+   02. GLOBAL COMPONENTS
 ========================================================= */
+
+/* --- Buttons --- */
 button { 
     min-height: 48px; 
     min-width: 48px; 
@@ -48,26 +72,75 @@ button {
 }
 
 button:hover:enabled { background: #60a5fa; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.btn-solid {
+    width: 100%;
+    padding: 14px;
+    background: #3b82f6;
+    color: #0f172a; /* AAA Compliant */
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1rem;
+    transition: all 0.2s;
 }
 
+.btn-solid:hover { background: #60a5fa; transform: translateY(-1px); }
+
+/* --- Modals --- */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(2, 6, 23, 0.7);
+    backdrop-filter: blur(10px);
+    z-index: 9999; /* Forces modal above absolutely everything */
+}
+
+/* --- Badges (AAA Compliant Colors) --- */
+.badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; white-space: nowrap; display: inline-block; text-align: center;}
+
+/* Status Badges */
+.badge-active { background: rgba(249, 115, 22, 0.2); color: #fdba74; } 
+.badge-assigned { background: rgba(59, 130, 246, 0.2); color: #93c5fd; } 
+.badge-resolved { background: rgba(34, 197, 94, 0.2); color: #86efac; } 
+.badge-review { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; } 
+
+/* Priority Badges */
+.badge-high { background: rgba(225, 29, 72, 0.2); color: #fda4af; }    
+.badge-medium { background: rgba(217, 119, 6, 0.2); color: #fcd34d; }  
+.badge-low { background: rgba(45, 212, 191, 0.2); color: #5eead4; }     
+
+/* Tool Status Badges */
+.badge-available { background: rgba(34, 197, 94, 0.2); color: #86efac; } 
+.badge-out { background: rgba(226, 232, 240, 0.1); color: #e2e8f0; }    
+
+/* --- Floating Action Button (AR Launcher) --- */
+.fab-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1000; }
+.fab-ar { display: flex; align-items: center; justify-content: center; width: 70px; height: 70px; background-color: #f97316; color: white; border-radius: 50%; text-decoration: none; font-size: 2rem; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4); transition: transform 0.2s, background-color 0.2s; }
+.fab-ar:hover { transform: scale(1.25); background-color: #ea580c; }
+.fab-ar .icon { display: inline-block; transform: translateY(-7px); }
+
+
 /* =========================================================
-   LOGIN SCREEN & MODALS
+   03. LOGIN SCREEN
 ========================================================= */
 .new-login-bg {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh; /* This single line fixes the box stuck at the top! */
-    background: radial-gradient(circle at top left, #2c3e50, #0f172a); 
+    min-height: 100vh; /* Keeps container full height */
     position: relative;
     overflow: hidden;
 }
 
-/* Abstract dark wave background matching the slate theme */
+/* Abstract dark wave background */
 .bg-waves {
     position: absolute;
     bottom: 0;
@@ -85,7 +158,7 @@ button:disabled {
     z-index: 10;
     width: 100%;
     max-width: 420px;
-    background: #1e293b; /* Matches your dashboard cards */
+    background: #1e293b;
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 12px;
     overflow: hidden;
@@ -93,7 +166,7 @@ button:disabled {
     animation: fadeInUp 0.4s ease-out;
 }
 
-/* Top Half: Dark Header */
+/* Login Header & Spinning SVG Cog */
 .login-header-art {
     background: #0f172a; 
     padding: 40px 30px;
@@ -101,20 +174,18 @@ button:disabled {
     color: #f8fafc;
     position: relative;
     border-bottom: 1px solid #334155;
-    overflow: hidden; /* Keeps the massive spinning cog inside the box */
+    overflow: hidden;
 }
 
-/* The Spinning SVG Cog */
 .login-header-art::after {
     content: '';
     position: absolute;
     width: 140px;
     height: 140px;
-    /* Pure SVG encoded directly into the CSS */
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z'/%3E%3C/svg%3E");
     background-size: contain;
     background-repeat: no-repeat;
-    opacity: 0.05; /* Keeps it very subtle */
+    opacity: 0.05;
     top: -20px;
     right: -20px;
     animation: spin 30s linear infinite;
@@ -125,14 +196,13 @@ button:disabled {
 .login-header-art h2 { margin: 0 0 10px 0; font-size: 1.5rem; position: relative; z-index: 2; }
 .login-header-art p { margin: 0; font-size: 0.85rem; color: #ffffff; position: relative; z-index: 2; line-height: 1.4; }
 
-/* Bottom Half: The Form */
+/* Login Form Elements */
 .login-form-area { padding: 40px 30px; background: #1e293b; }
 .form-title { text-align: center; color: #f8fafc; font-weight: 800; margin-top: 0; margin-bottom: 25px; letter-spacing: 0.5px; }
 
 .input-group { position: relative; margin-bottom: 15px; }
 .input-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem; z-index: 2; }
 
-/* Dark Inputs matching dashboard */
 .input-group input {
     width: 100%;
     padding: 14px 15px 14px 45px;
@@ -142,71 +212,18 @@ button:disabled {
     color: #f8fafc;
     font-size: 0.95rem;
 }
-
 .input-group input::placeholder { color: #64748b; }
+.input-group input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
 
-.input-group input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59,130,246,0.3);
-}
-
-.form-options {
-    display: flex;
-    justify-content: space-between; /* Pushes toggle left, link right */
-    align-items: center;
-    font-size: 0.85rem;
-    margin-bottom: 25px;
-}
-
-.toggle-password {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #94a3b8;
-    cursor: pointer;
-}
-
-
-.toggle-password input {
-    cursor: pointer;
-    margin: 0;
-}
-
-
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: rgba(2, 6, 23, 0.7);
-    backdrop-filter: blur(10px);
-    z-index: 9999; /* Forces it above absolutely everything */
-}
-
+.form-options { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 25px; }
+.toggle-password { display: flex; align-items: center; gap: 8px; color: #94a3b8; cursor: pointer; }
+.toggle-password input { cursor: pointer; margin: 0; }
 .forgot-link { color: #93c5fd; text-decoration: none; transition: color 0.2s ease; }
 .forgot-link:hover { color: #3b82f6; }
 
-.btn-solid {
-    width: 100%;
-    padding: 14px;
-    background: #3b82f6;
-    color: #0f172a; /* AAA Compliant */
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
-    font-size: 1rem;
-    transition: all 0.2s;
-}
-
-.btn-solid:hover { background: #60a5fa; transform: translateY(-1px); }
 
 /* =========================================================
-   DASHBOARD LAYOUT (Your Grid & Structure)
+   04. DASHBOARD LAYOUT
 ========================================================= */
 .dashboard-layout {
     display: grid;
@@ -222,27 +239,55 @@ button:disabled {
 header { grid-area: header; background-color: #0f172a; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; border-bottom: 2px solid #334155; }
 .header-logo { font-size: 1.2rem; font-weight: bold; letter-spacing: 1px; }
 .header-controls { display: flex; gap: 15px; }
-.account-btn { background: transparent; border: 1px solid #64748b; border-radius: 50%; }
 
-/* Sidebar */
+/* Sidebar Navigation */
 .menu-toggle-btn { display: none; background: transparent; border: none; color: white; font-size: 2rem; cursor: pointer; min-width: 48px; min-height: 48px; padding: 0; margin-right: 10px;text-align: center; }
 .sidebar { grid-area: sidebar; background-color: #0f172a; border-right: 1px solid #334155; padding-top: 20px; display: flex; flex-direction: column; }
-.nav-item { padding: 15px 20px; display: block; width: 100%; text-align: left; background: transparent; border: none; color: #cbd5e1; font-size: 1rem; border-radius: 0; border-left: 4px solid transparent; }
-.nav-item:hover, .nav-item.active { background-color: #334155; color: white; border-left-color: #3b82f6; }
+
+/* AAA-Compliant Nav Pill Buttons */
+.nav-item { 
+    padding: 12px 16px; 
+    margin: 8px 15px; 
+    display: block; 
+    width: calc(100% - 30px); 
+    text-align: left; 
+    background-color: #1e293b; 
+    border: 1px solid #475569; 
+    color: #f8fafc; 
+    font-size: 0.95rem; 
+    font-weight: bold;
+    border-radius: 8px; 
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.nav-item:hover { background-color: #334155; border-color: #64748b; }
+.nav-item.active { 
+    background-color: #1d4ed8; 
+    color: #ffffff; 
+    border: 1px solid #60a5fa; 
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+}
+
+/* Sidebar Logout Area */
+.sidebar-spacer { flex-grow: 1; } 
+.logout-container { padding: 20px; text-align: center; border-top: 1px solid #334155; }
+.logout-btn { background: transparent; border: none; color: #cbd5e1; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; font-size: 0.9rem; }
+.logout-btn:hover { color: white; }
+.logout-icon { font-size: 1.5rem; background: #334155; padding: 10px; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
 
 /* Main Content Area */
 .main-content { grid-area: main; padding: 20px 20px 100px 20px; overflow-y: auto; background-color: #0f172a; }
-
-/* Two-Column Dashboard Layout */
 .dashboard-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; }
 .column { display: flex; flex-direction: column; gap: 20px; }
 
-/* =========================================================
-   UI CARDS & TABLES (Styles)
-========================================================= */
-/* KPI Cards */
-.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
 
+/* =========================================================
+   05. UI WIDGETS
+========================================================= */
+
+/* --- KPI Base Cards --- */
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
 .kpi-card { 
     background: #1e293b; 
     padding: 20px; 
@@ -251,16 +296,26 @@ header { grid-area: header; background-color: #0f172a; display: flex; justify-co
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); 
     display: flex; 
     flex-direction: column; 
-    position: relative; /* Required to keep the icon inside the box */
-    overflow: hidden;   /* Clips the icon if it hangs over the edge */
+    position: relative; 
+    overflow: hidden;   
 }
 
 .kpi-title, .kpi-value { position: relative; z-index: 2; }
-
-.kpi-title { font-size: 0.85rem; color: #cbd5e1; text-transform: uppercase; margin-bottom: 10px; }
 .kpi-value { font-size: 2.5rem; font-weight: bold; }
 
-/* The Base Icon Styling */
+/* Title safe zone prevents text collision with the hover arrow */
+.kpi-title { 
+    display: block;
+    font-size: 0.85rem; 
+    color: #cbd5e1; 
+    text-transform: uppercase; 
+    margin-bottom: 10px; 
+    padding-right: 35px; 
+    line-height: 1.3;
+    min-height: 2.6em; /* Keeps alignment perfect when adjacent text wraps */
+}
+
+/* Background Icons */
 .kpi-card::after {
     content: '';
     position: absolute;
@@ -270,86 +325,114 @@ header { grid-area: header; background-color: #0f172a; display: flex; justify-co
     bottom: 0px; 
     background-size: contain;
     background-repeat: no-repeat;
-    opacity: 0.15; /* Increased from 0.05 to make them clearly visible */
+    opacity: 0.15; 
     z-index: 0;
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease; /* Added opacity to the transition */
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease; 
 }
 
-.kpi-card:hover::after {
-    transform: scale(1.15) rotate(-10deg);
-    opacity: 0.3; /* Increased opacity on hover */
+.kpi-card:hover::after { transform: scale(1.15) rotate(-10deg); opacity: 0.3; }
+
+/* Embedded SVG Backgrounds */
+.card-active::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/%3E%3Cline x1='12' y1='9' x2='12' y2='13'/%3E%3Cline x1='12' y1='17' x2='12.01' y2='17'/%3E%3C/svg%3E"); }
+.card-review::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/%3E%3Crect x='8' y='2' width='8' height='4' rx='1' ry='1'/%3E%3C/svg%3E"); }
+.card-progress::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z'/%3E%3C/svg%3E"); }
+.card-tools-out::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'/%3E%3Cpolyline points='16 17 21 12 16 7'/%3E%3Cline x1='21' y1='12' x2='9' y2='12'/%3E%3C/svg%3E"); }
+.card-tools-avail::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 11.08V12a10 10 0 1 1-5.93-9.14'/%3E%3Cpolyline points='22 4 12 14.01 9 11.01'/%3E%3C/svg%3E"); }
+
+/* --- Clickable KPI Cards (Supervisor Drill-Down) --- */
+.clickable-kpi {
+    cursor: pointer;
+    border: 1px solid #475569 !important; /* AAA compliant boundary */
+    transition: all 0.2s ease;
 }
 
-.card-active::after {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/%3E%3Cline x1='12' y1='9' x2='12' y2='13'/%3E%3Cline x1='12' y1='17' x2='12.01' y2='17'/%3E%3C/svg%3E");
+.clickable-kpi:hover {
+    background-color: #334155;
+    border-color: #64748b !important;
+    transform: translateY(-2px); 
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
 }
 
-
-.card-review::after {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/%3E%3Crect x='8' y='2' width='8' height='4' rx='1' ry='1'/%3E%3C/svg%3E");
+.clickable-kpi::before {
+    content: '➔';
+    position: absolute;
+    top: 10px; 
+    right: 15px;
+    font-size: 2.2rem; 
+    font-weight: bold; 
+    color: #93c5fd; 
+    z-index: 3;
+    transition: all 0.2s ease;
 }
 
-
-.card-progress::after {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z'/%3E%3C/svg%3E");
+.clickable-kpi:hover::before {
+    transform: translateX(6px);
+    color: #ffffff;
 }
 
-
-.card-tools-out::after {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'/%3E%3Cpolyline points='16 17 21 12 16 7'/%3E%3Cline x1='21' y1='12' x2='9' y2='12'/%3E%3C/svg%3E");
-}
-
-
-.card-tools-avail::after {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 11.08V12a10 10 0 1 1-5.93-9.14'/%3E%3Cpolyline points='22 4 12 14.01 9 11.01'/%3E%3C/svg%3E");
-}
-
-
-.text-orange { color: #fdba74; } 
-.text-blue { color: #93c5fd; } 
-.text-green { color: #86efac; } 
-
-/* Tables Area */
+/* --- Data Tables Area --- */
 .table-card { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); overflow-x: auto; flex-grow: 1; }
 table { width: 100%; border-collapse: collapse; text-align: left; margin-top: 15px; }
 th { border-bottom: 2px solid #334155; padding: 10px; color: #cbd5e1; font-size: 0.85rem; }
 td { padding: 12px 10px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
 
+
 /* =========================================================
-   BADGES (AAA Compliant Colors)
+   06. WORKLOAD BALANCING
 ========================================================= */
-.badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; white-space: nowrap; display: inline-block; text-align: center;}
-.badge-active { background: rgba(249, 115, 22, 0.2); color: #fdba74; } 
-.badge-assigned { background: rgba(59, 130, 246, 0.2); color: #93c5fd; } 
-.badge-resolved { background: rgba(34, 197, 94, 0.2); color: #86efac; } 
-.badge-review { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; } 
+.tech-card {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s ease;
+}
 
-/* Priority Badges */
-.badge-high { background: rgba(225, 29, 72, 0.2); color: #fda4af; }    
-.badge-medium { background: rgba(217, 119, 6, 0.2); color: #fcd34d; }  
-.badge-low { background: rgba(45, 212, 191, 0.2); color: #5eead4; }     /* AAA Brighter Teal */     
+.tech-card:hover { border-color: #475569; }
 
-/* Tool Status Badges */
-.badge-available { background: rgba(34, 197, 94, 0.2); color: #86efac; } 
-.badge-out { background: rgba(226, 232, 240, 0.1); color: #e2e8f0; }    /* AAA Crisp Silver */    
+.tech-card-header {
+    padding: 15px 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #0f172a;
+    border-bottom: 1px solid transparent;
+    transition: background-color 0.2s ease;
+}
+
+.tech-card-header:hover { background-color: #1e293b; }
+
+.tech-card-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out, padding 0.3s ease;
+    background-color: #1e293b;
+}
+
+.tech-card.expanded .tech-card-header { border-bottom: 1px solid #334155; }
+
+.tech-card.expanded .tech-card-body {
+    max-height: 500px; /* Allows smooth vertical sliding */
+    overflow-y: auto;
+    padding: 15px 20px;
+}
+
+.mini-fault-item {
+    background: #0f172a;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #334155;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.mini-fault-item:last-child { margin-bottom: 0; }
+
 
 /* =========================================================
-   LOGOUT & FAB
-========================================================= */
-.sidebar-spacer { flex-grow: 1; } 
-.logout-container { padding: 20px; text-align: center; border-top: 1px solid #334155; }
-.logout-btn { background: transparent; border: none; color: #cbd5e1; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; font-size: 0.9rem; }
-.logout-btn:hover { color: white; }
-.logout-icon { font-size: 1.5rem; background: #334155; padding: 10px; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
-
-/* Floating AR Button */
-.fab-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1000; }
-.fab-ar { display: flex; align-items: center; justify-content: center; width: 70px; height: 70px; background-color: #f97316; color: white; border-radius: 50%; text-decoration: none; font-size: 2rem; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4); transition: transform 0.2s, background-color 0.2s; }
-.fab-ar:hover { transform: scale(1.25); background-color: #ea580c; }
-.fab-ar .icon { display: inline-block; transform: translateY(-7px); }
-
-/* =========================================================
-   MOBILE RESPONSIVENESS
+   07. MOBILE RESPONSIVENESS
 ========================================================= */
 @media (max-width: 768px) {
     .dashboard-layout { grid-template-areas: "header" "main"; grid-template-columns: 1fr; }
@@ -368,68 +451,4 @@ td { padding: 12px 10px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
     }
     
     .sidebar.open { left: 0; }
-}
-
-
-
-/* =========================================================
-   TECHNICAL DETAILS CARDS (Collapsible)
-========================================================= */
-.tech-card {
-    background-color: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 8px;
-    overflow: hidden;
-    transition: border-color 0.2s ease;
-}
-
-.tech-card:hover {
-    border-color: #475569;
-}
-
-.tech-card-header {
-    padding: 15px 20px;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #0f172a;
-    border-bottom: 1px solid transparent;
-    transition: background-color 0.2s ease;
-}
-
-.tech-card-header:hover {
-    background-color: #1e293b;
-}
-
-.tech-card-body {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease-out, padding 0.3s ease;
-    background-color: #1e293b;
-}
-
-.tech-card.expanded .tech-card-header {
-    border-bottom: 1px solid #334155;
-}
-
-.tech-card.expanded .tech-card-body {
-    max-height: 500px; /* Arbitrary large number to allow sliding */
-    overflow-y: auto;
-    padding: 15px 20px;
-}
-
-.mini-fault-item {
-    background: #0f172a;
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid #334155;
-    margin-bottom: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.mini-fault-item:last-child {
-    margin-bottom: 0;
 }
