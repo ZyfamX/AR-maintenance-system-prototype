@@ -2,45 +2,247 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>AR Scanner - CMS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AR Scanner — CMS</title>
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="/static/ar.css">
+
+    <!-- A-Frame + AR.js -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <style>
-        body { margin: 0; overflow: hidden; font-family: sans-serif; color: white; }
-        .overlay { position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 8px; }
-        .fallback { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1e293b; z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        .hidden { display: none !important; }
-        a { color: #3b82f6; text-decoration: none; font-weight: bold; margin-top: 20px;}
-    </style>
+
 </head>
 <body>
 
-    <!-- Fallback UI for Missing Camera Permissions -->
-    <div class="fallback hidden" id="fallback">
-        <h2>Camera Error</h2>
-        <p>Camera access is unavailable or was denied.</p>
-        <p id="fallbackData">Please check device settings.</p>
-        <a href="/">← Back to Dashboard</a>
+    <!-- ── Fallback (camera unavailable) ───────────────────── -->
+    <div id="fallback" class="hidden">
+        <div class="fallback-icon">📷</div>
+        <h2>Camera Unavailable</h2>
+        <p id="fallback-msg">Camera permission was denied or the camera is unavailable.</p>
+        <a href="/">← Return to Dashboard</a>
     </div>
 
-    <!-- AR UI Overlay -->
-    <div class="overlay" id="overlay">
-        <h3 style="margin-top:0;">AR Scanner Active</h3>
-        <p id="status" style="color: #f0c040;">Point camera at Hiro marker...</p>
-        <div id="dataPanel">Loading tool data...</div>
-        <a href="/">← Exit AR</a>
-    </div>
 
-    <!-- The AR.js Scene -->
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false" id="arScene">
-        <!-- We are using the Hiro marker as required by the lab -->
-        <a-marker preset="hiro" id="hiroMarker">
-            <a-box position="0 0.5 0" scale="0.8 0.8 0.8" color="#4CC3D9" opacity="0.9"></a-box>
-            <a-text id="arText" value="Scanning..." position="0 1.4 0" align="center" color="#ffffff" scale="1.5 1.5 1.5"></a-text>
+    <!-- ── AR Scene (A-Frame + AR.js — barcode markers 1–20) ──── -->
+    <!--
+        BARCODE MARKERS (3x3 matrix type)
+        ==================================
+        Each <a-marker> below listens for the corresponding physical printed marker.
+        The `value` attribute is the barcode number — this must match the marker_id
+        stored on the tool or fault in your database.
+
+        Print markers from:
+          https://github.com/nicolocarpignoli/artoolkit-barcode-markers-collection/tree/master/3x3
+        or generate them at:
+          https://au.gmented.com/app/marker/marker.php
+
+        To add more markers, duplicate a block and change `value` and `id`.
+        To use fewer markers, simply remove the blocks you don't need.
+    -->
+    <a-scene
+        id="arScene"
+        embedded
+        arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+        vr-mode-ui="enabled: false"
+        renderer="logarithmicDepthBuffer: true; antialias: true;"
+        loading-screen="enabled: false"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"
+    >
+        <a-marker type="barcode" value="1" id="barcode-1">
         </a-marker>
+
+        <a-marker type="barcode" value="2" id="barcode-2">
+        </a-marker>
+
+        <a-marker type="barcode" value="3" id="barcode-3">
+        </a-marker>
+
+        <a-marker type="barcode" value="4" id="barcode-4">
+        </a-marker>
+
+        <a-marker type="barcode" value="5" id="barcode-5">
+        </a-marker>
+
+        <a-marker type="barcode" value="6" id="barcode-6">
+        </a-marker>
+
+        <a-marker type="barcode" value="7" id="barcode-7">
+        </a-marker>
+
+        <a-marker type="barcode" value="8" id="barcode-8">
+        </a-marker>
+
+        <a-marker type="barcode" value="9" id="barcode-9">
+        </a-marker>
+
+        <a-marker type="barcode" value="10" id="barcode-10">
+        </a-marker>
+
+        <a-marker type="barcode" value="11" id="barcode-11">
+        </a-marker>
+
+        <a-marker type="barcode" value="12" id="barcode-12">
+        </a-marker>
+
+        <a-marker type="barcode" value="13" id="barcode-13">
+        </a-marker>
+
+        <a-marker type="barcode" value="14" id="barcode-14">
+        </a-marker>
+
+        <a-marker type="barcode" value="15" id="barcode-15">
+        </a-marker>
+
+        <a-marker type="barcode" value="16" id="barcode-16">
+        </a-marker>
+
+        <a-marker type="barcode" value="17" id="barcode-17">
+        </a-marker>
+
+        <a-marker type="barcode" value="18" id="barcode-18">
+        </a-marker>
+
+        <a-marker type="barcode" value="19" id="barcode-19">
+        </a-marker>
+
+        <a-marker type="barcode" value="20" id="barcode-20">
+        </a-marker>
+
+        <a-marker type="barcode" value="21" id="barcode-21">
+        </a-marker>
+
+        <a-marker type="barcode" value="22" id="barcode-22">
+        </a-marker>
+
+        <a-marker type="barcode" value="23" id="barcode-23">
+        </a-marker>
+
+        <a-marker type="barcode" value="24" id="barcode-24">
+        </a-marker>
+
+        <a-marker type="barcode" value="25" id="barcode-25">
+        </a-marker>
+
+        <a-marker type="barcode" value="26" id="barcode-26">
+        </a-marker>
+
+        <a-marker type="barcode" value="27" id="barcode-27">
+        </a-marker>
+
+        <a-marker type="barcode" value="28" id="barcode-28">
+        </a-marker>
+
+        <a-marker type="barcode" value="29" id="barcode-29">
+        </a-marker>
+
+        <a-marker type="barcode" value="30" id="barcode-30">
+        </a-marker>
+
+        <a-marker type="barcode" value="31" id="barcode-31">
+        </a-marker>
+
+        <a-marker type="barcode" value="32" id="barcode-32">
+        </a-marker>
+
         <a-entity camera></a-entity>
     </a-scene>
 
+
+    <!-- ── 2D Overlay ─────────────────────────────────────── -->
+    <div id="overlay">
+
+        <!-- Top Bar -->
+        <div id="top-bar">
+            <h1>⚙️ CMS: AR SCANNER</h1>
+            <span id="status">Point camera at a marker…</span>
+        </div>
+
+        <!-- Spacer (transparent middle — let AR through) -->
+        <div style="flex: 1;"></div>
+
+        <!-- Bottom Nav -->
+        <div id="bottom-nav">
+            <button id="btn-home" aria-label="Home">🏠</button>
+
+            <!--
+                Mode Switch: sets the scan mode in ar.js.
+                TOOL mode  → looks up marker_id in tools,  shows check-in/out.
+                FAULT mode → looks up marker_id in faults, shows fault details.
+                ar.js reads window.scanMode ("tool" | "fault") on every markerFound event.
+            -->
+            <div id="mode-switch">
+                <button class="mode-btn active-tool" id="mode-tool" aria-pressed="true">
+                    🔧 TOOL
+                </button>
+                <button class="mode-btn" id="mode-fault" aria-pressed="false">
+                    ⚠️ FAULT
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- ── Info Panel (slides up on marker found) ─────────── -->
+    <div id="info-panel">
+        <div id="panel-header">
+            <span id="panel-title">Tool View</span>
+            <button id="panel-close" aria-label="Close panel">✕</button>
+        </div>
+
+        <div id="panel-body">
+            <!-- Populated by ar.js -->
+        </div>
+
+        <button id="panel-action-btn" class="ar-action-btn" style="display: none;">
+            Action
+        </button>
+    </div>
+
+
+    <!-- ── Scripts ────────────────────────────────────────── -->
     <script type="module" src="/static/ar.js"></script>
+
+    <script>
+        // Close panel button — hides the overlay but keeps AR running
+        document.getElementById('panel-close').addEventListener('click', () => {
+            document.getElementById('info-panel').classList.remove('visible');
+        });
+
+        // ── Mode Switch Logic ──────────────────────────────────────────────
+        // ar.js reads window.scanMode to know whether to look up tools or faults.
+        // Default is "tool".
+        window.scanMode = 'tool';
+
+        const btnTool  = document.getElementById('mode-tool');
+        const btnFault = document.getElementById('mode-fault');
+        const statusEl = document.getElementById('status');
+
+        btnTool.addEventListener('click', () => {
+            window.scanMode = 'tool';
+            btnTool.classList.add('active-tool');
+            btnTool.setAttribute('aria-pressed', 'true');
+            btnFault.classList.remove('active-fault');
+            btnFault.setAttribute('aria-pressed', 'false');
+            statusEl.textContent = 'Tool mode — point camera at a marker…';
+            statusEl.style.color = '#f97316';
+            // Close any open panel when switching modes
+            document.getElementById('info-panel').classList.remove('visible');
+        });
+
+        btnFault.addEventListener('click', () => {
+            window.scanMode = 'fault';
+            btnFault.classList.add('active-fault');
+            btnFault.setAttribute('aria-pressed', 'true');
+            btnTool.classList.remove('active-tool');
+            btnTool.setAttribute('aria-pressed', 'false');
+            statusEl.textContent = 'Fault mode — point camera at a marker…';
+            statusEl.style.color = '#ef4444';
+            // Close any open panel when switching modes
+            document.getElementById('info-panel').classList.remove('visible');
+        });
+    </script>
+
 </body>
 </html>

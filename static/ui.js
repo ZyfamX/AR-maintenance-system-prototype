@@ -162,6 +162,38 @@ export function setupEventListeners() {
         menuToggleButton.addEventListener('click', () => sidebarElement.classList.toggle('open'));
     }
 
+
+    // --- AR CAMERA LAUNCH (CRASH PREVENTION) ---
+    const arLaunchButton = document.getElementById('btn-launch-ar');
+    
+    if (arLaunchButton) {
+        arLaunchButton.addEventListener('click', async (e) => {
+            e.preventDefault();
+            
+            // Change button text to show it's loading
+            const originalText = arLaunchButton.innerHTML;
+            arLaunchButton.innerHTML = 'Loading Camera...';
+            arLaunchButton.disabled = true;
+
+            try {
+                // Pre-warm the camera: Ask for permission on the lightweight dashboard
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                
+                // Permission granted! Immediately stop the stream to free the hardware
+                stream.getTracks().forEach(track => track.stop());
+                
+                // Now redirect to the heavy AR page. No popup will trigger, preventing the crash.
+                window.location.href = '/static/ar.html'; 
+                
+            } catch (err) {
+                alert("Camera access is required to use the AR Scanner.");
+                arLaunchButton.innerHTML = originalText;
+                arLaunchButton.disabled = false;
+            }
+        });
+    }
+
+
     // --- LOGIN FORM ---
     const loginFormElement = document.getElementById('login-form');
     if (loginFormElement) {
@@ -386,7 +418,7 @@ const renderDashboardTables = (visibleFaults, visibleTools, users) => {
 
             return `
                 <tr>
-                    <td>F-${fault.id}</td>
+                    <!-- REMOVED ID COLUMN HERE -->
                     <td>${fault.title}</td>
                     <td>${fault.location}</td>
                     <td><span class="badge ${priorityBadgeClass}">${fault.priority ? fault.priority.toUpperCase() : 'N/A'}</span></td>
@@ -395,10 +427,36 @@ const renderDashboardTables = (visibleFaults, visibleTools, users) => {
         }).join('');
     }
 
-    // --- DASHBOARD TOOLS TABLE ---
+    // --- DASHBOARD TOOLS TABLE (Dynamic based on Role) ---
     const toolsTableBody = document.getElementById('tools-table-body');
-    if (toolsTableBody) {
+    const toolsTableHead = toolsTableBody ? toolsTableBody.previousElementSibling : null; // Grabs the <thead>
+
+    if (toolsTableBody && toolsTableHead) {
+        // Determine role to dynamically shape the table
+        const userData = JSON.parse(localStorage.getItem('ar_user'));
+        const isSupervisor = ['supervisor', 'admin', 'administrator'].includes(userData?.role?.toLowerCase());
+
         let toolsArray = [...visibleTools];
+
+        // Dynamically set the Table Headers based on role
+        if (isSupervisor) {
+            toolsTableHead.innerHTML = `
+                <tr>
+                    <th>TOOL ID</th>
+                    <th>TYPE</th>
+                    <th>LOCATION</th>
+                    <th>STATUS</th>
+                    <th>CURRENT USER</th>
+                </tr>`;
+        } else {
+            // TECHNICIAN HEADERS: Only 3 columns
+            toolsTableHead.innerHTML = `
+                <tr>
+                    <th>TYPE</th>
+                    <th>CHECKOUT TIME</th>
+                    <th>LOCATION</th>
+                </tr>`;
+        }
 
         toolsArray.sort((a, b) => {
             let valA, valB;
@@ -414,22 +472,35 @@ const renderDashboardTables = (visibleFaults, visibleTools, users) => {
             return 0;
         });
 
+        // Render the Rows based on role
         toolsTableBody.innerHTML = toolsArray.map(tool => {
-            const toolBadgeClass  = tool.status === 'Available' ? 'badge-available' : 'badge-out';
-            const currentUserText = tool.current_user_id
-                ? `${getUserFullName(users, tool.current_user_id)} (User ${tool.current_user_id})`
-                : 'In Storage';
-            return `
-                <tr>
-                    <td>${tool.id}</td>
-                    <td>${tool.tool_type}</td>
-                    <td>${tool.storage_location || '<span style="color:#64748b;">Not Assigned</span>'}</td>
-                    <td><span class="badge ${toolBadgeClass}">${tool.status.toUpperCase()}</span></td>
-                    <td>${currentUserText}</td>
-                </tr>`;
+            if (isSupervisor) {
+                // SUPERVISOR ROW (Full Data)
+                const toolBadgeClass  = tool.status === 'Available' ? 'badge-available' : 'badge-out';
+                const currentUserText = tool.current_user_id ? getUserFullName(users, tool.current_user_id) : 'In Storage';
+                return `
+                    <tr>
+                        <td>${tool.id}</td>
+                        <td>${tool.tool_type}</td>
+                        <td>${tool.storage_location || '<span style="color:#64748b;">Not Assigned</span>'}</td>
+                        <td><span class="badge ${toolBadgeClass}">${tool.status.toUpperCase()}</span></td>
+                        <td>${currentUserText}</td>
+                    </tr>`;
+            } else {
+                // TECHNICIAN ROW (Compact Data: Type, Time, Location)
+                const checkoutTimeText = tool.checkout_timestamp ? new Date(tool.checkout_timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+                return `
+                    <tr>
+                        <td style="font-weight: bold;">${tool.tool_type}</td>
+                        <td>${checkoutTimeText}</td>
+                        <td style="font-size: 0.85rem; color: #cbd5e1;">${tool.storage_location || '<span style="color:#64748b;">Not Assigned</span>'}</td>
+                    </tr>`;
+            }
         }).join('');
     }
 };
+
+
 
 
 // ============================================================================
@@ -740,7 +811,7 @@ const setupTechnicianViews = (myFaults, allTools, users, normalisedRole, userId)
             const priorityBadgeClass = f.priority?.toUpperCase() === 'HIGH' ? 'badge-high' : f.priority?.toUpperCase() === 'MEDIUM' ? 'badge-medium' : 'badge-low';
             return `
                 <tr>
-                    <td>F-${f.id}</td>
+                    <!-- REMOVED ID COLUMN HERE -->
                     <td>${f.title}</td>
                     <td>${f.location}</td>
                     <td><span class="badge ${priorityBadgeClass}">${f.priority ? f.priority.toUpperCase() : 'N/A'}</span></td>

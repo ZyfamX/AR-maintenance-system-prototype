@@ -252,7 +252,34 @@ header {
 .header-controls { display: flex; gap: 15px; }
 
 /* Sidebar Navigation */
-.menu-toggle-btn { display: none; background: transparent; border: none; color: white; font-size: 2rem; cursor: pointer; min-width: 48px; min-height: 48px; padding: 0; margin-right: 10px;text-align: center; }
+.menu-toggle-btn { 
+    display: none; /* Hidden on desktop */
+    background: #1e293b; /* Dark slate background */
+    border: 1px solid #475569; /* Crisp outline */
+    color: #f8fafc; /* High contrast white */
+    font-size: 2rem; 
+    cursor: pointer; 
+    width: 48px;  /* WCAG AAA Minimum Touch Target */
+    height: 48px; /* WCAG AAA Minimum Touch Target */
+    border-radius: 8px; /* Modern curved edges */
+    margin-right: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.4); /* Subtle 3D shadow */
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.menu-toggle-btn:hover {
+    background: #334155;
+    border-color: #64748b;
+    transform: translateY(-1px); /* Lifts up slightly on hover */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.5); /* Shadow expands */
+}
+
+.menu-toggle-btn:active {
+    transform: translateY(1px); /* Presses down into the screen */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.4); /* Shadow flattens */
+}
+
 .sidebar { grid-area: sidebar; background-color: #0f172a; border-right: 1px solid #334155; padding-top: 20px; display: flex; flex-direction: column; }
 
 /* AAA-Compliant Nav Pill Buttons */
@@ -388,6 +415,7 @@ th { border-bottom: 2px solid #334155; padding: 10px; color: #cbd5e1; font-size:
 td { padding: 12px 10px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
 
 
+
 /* =========================================================
    06. WORKLOAD BALANCING
 ========================================================= */
@@ -448,18 +476,48 @@ td { padding: 12px 10px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
 @media (max-width: 768px) {
     .dashboard-layout { grid-template-areas: "header" "main"; grid-template-columns: 1fr; }
     .tables-row { grid-template-columns: 1fr; }
-    .menu-toggle-btn { display: block; }
+    .menu-toggle-btn { 
+        display: flex; /* Overrides the 'none' from desktop */
+        justify-content: center; /* Centers horizontally */
+        align-items: center; /* Centers vertically */
+        padding-bottom: 4px; /* Nudges the '≡' symbol up slightly for visual balance */
+    }
     
+    /* FIXED: Header Spacing for Mobile */
+    header { padding: 0 15px !important; }
+    #header-role-title { display: none !important; } /* Hides "Technician Dashboard" to make room for the Camera */
+    .header-logo span { font-size: 1.1rem !important; } /* Shrinks the CMS title slightly */
+    
+    /* FIXED: Sidebar Layout */
     .sidebar { 
         position: fixed; 
         top: 90px; 
         left: -250px; 
         width: 250px; 
-        height: calc(100vh - 90px); 
+        /* By using bottom: 0 instead of a 'vh' calculation, it perfectly fits above the phone's address bar! */
+        bottom: 0; 
+        height: auto; 
+        overflow-y: auto; /* Allows scrolling inside the menu just in case */
         z-index: 2000; 
         transition: left 0.3s ease-in-out; 
         box-shadow: 4px 0 15px rgba(0,0,0,0.5);
     }
     
     .sidebar.open { left: 0; }
+
+
+
+    td .badge {
+        white-space: normal !important; 
+        word-wrap: break-word;
+        line-height: 1.2;
+        padding: 4px; /* Slightly reduce padding on mobile */
+    }
+
+    /* Compress the Action button so it doesn't hog space */
+    .btn-view-report {
+        padding: 4px !important;
+        font-size: 0.7rem !important;
+        white-space: normal !important;
+    }
 }

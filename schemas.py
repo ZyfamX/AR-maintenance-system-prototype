@@ -22,8 +22,7 @@ class UserOut(BaseModel):
 
 # What the AR app sends when scanning a new fault
 class FaultCreate(BaseModel):
-
-    marker_id: str = Field(min_length=3, max_length=50)
+    marker_id: str = Field(min_length=1, max_length=50) # Fixed min_length
     title: str = Field(min_length=5, max_length=100)
     description: str = Field(min_length=10, max_length=500)
     location: str = Field(min_length=3, max_length=100)
@@ -60,8 +59,7 @@ class FaultOut(BaseModel):
 
 # What the AR app sends when a tool marker is scanned
 class ToolScan(BaseModel):
-    
-    marker_id: str = Field(min_length=3, max_length=50)
+    marker_id: str = Field(min_length=1, max_length=50) # Fixed min_length
 
 
 # What the backend sends to the dashboard list
