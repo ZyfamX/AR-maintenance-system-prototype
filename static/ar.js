@@ -113,20 +113,17 @@ function showFallback(message) {
 }
 
 /**
- * Checks if the device supports camera access and requests permission.
- * If successful, stops the stream immediately to free the hardware and loads the data.
+ * Checks if the device supports camera access.
+ * We no longer manually request/stop the stream here, as AR.js 
+ * handles the camera initialization automatically natively!
  */
 function checkCameraSupport() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         showFallback('Your browser does not support camera access.');
         return;
     }
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-            stream.getTracks().forEach(t => t.stop());
-            loadData();
-        })
-        .catch(() => showFallback('Camera permission was denied or the camera is unavailable.'));
+
+    loadData();
 }
 
 

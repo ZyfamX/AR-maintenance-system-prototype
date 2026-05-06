@@ -521,5 +521,10 @@
         "user_id": 13,
         "expires_at": "2026-05-06T20:22:36.140315+00:00",
         "csrf_token": "noF8lMuIGtusNk8AZz4Xi00Fqf8QWYR3H4rgbSocDlo"
+    },
+    "viTPeT-qSsUyh9Mu5Vf_UfTxwbuieHYem8XzyGSUsV8": {
+        "user_id": 13,
+        "expires_at": "2026-05-06T21:55:13.883934+00:00",
+        "csrf_token": "uSngXRbuYDCLZuRQEsW8RCgZ62T9J8eqtYzr3EBkHes"
     }
 }

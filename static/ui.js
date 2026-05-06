@@ -176,11 +176,12 @@ export function setupEventListeners() {
             arLaunchButton.disabled = true;
 
             try {
-                // Pre-warm the camera
+                // Pre-warm the camera: Ask for permission on the lightweight dashboard
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            
+                
                 stream.getTracks().forEach(track => track.stop());
-            
+                
+                // Wait 500ms before redirecting so the OS can safely power down the lens
                 setTimeout(() => {
                     window.location.href = '/static/ar.html'; 
                 }, 500);
