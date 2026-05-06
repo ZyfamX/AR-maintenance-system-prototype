@@ -1,10 +1,13 @@
 import bcrypt
 import os
 import json
+import threading
 from threading import Lock
 import re
+import time
 from datetime import datetime, UTC
 import hashlib
+from sessions import start_cleanup_thread
 
 # Password requirement configuration
 # 8+ chars, 1 number, 1 special char (Requirement NF12)
@@ -100,12 +103,9 @@ def log_system_event(user_id: int | None, action: str, details: str):
 
         with open(audit_log_file, "a", encoding="utf-8") as f:
             f.write(json.dumps(full_entry, sort_keys=True) + "\n")
-            
-
 
 # Verifies the integrity of the audit log
 def verify_audit_log(log_file: str) -> dict:
-
     """
     Verifies the integrity of the audit log.
 
@@ -185,7 +185,7 @@ def verify_audit_log(log_file: str) -> dict:
 
     return {"valid": True, "error": None, "line": None}
 
-
+# Sanitises input for the audit log
 def sanitise_for_log(text: str) -> str:
     if not isinstance(text, str):
         return text
@@ -200,3 +200,18 @@ def sanitise_for_log(text: str) -> str:
 
     # Limit text to 500 chars
     return text[:500]
+
+def audit_verifier_worker(interval_seconds=300):
+    while True:
+        time.sleep(interval_seconds)
+        verify_audit_log(audit_log_file)
+
+# Starts various security-related background threads
+def start_security_threads():
+    print("Starting security theads")
+    # Starts sessions cleanup
+    start_cleanup_thread()
+
+    # Starts audit log verifier
+    audit_verifier_thread = threading.Thread(target=audit_verifier_worker, daemon=True)
+    audit_verifier_thread.start()

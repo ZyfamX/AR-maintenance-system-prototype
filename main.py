@@ -8,12 +8,14 @@ from fastapi.responses import FileResponse, JSONResponse
 from typing import List
 from datetime import datetime, timedelta, UTC
 from schemas import FaultCreate, FaultUpdate, ToolScan, UserLogin, UserOut, FaultOut, ToolOut
-from security import verify_password, log_system_event, verify_audit_log
+from security import verify_password, log_system_event, verify_audit_log, start_security_threads
 from sessions import generate_session, validate_session, update_expiry, remove_session
 
 
 app = FastAPI(title="AR Maintenance System API")
 
+# Starts security-related background threads
+start_security_threads()
 
 # Reads data from a JSON file in the data/ directory
 def read_json(filename: str):

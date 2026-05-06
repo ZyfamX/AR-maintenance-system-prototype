@@ -1,6 +1,8 @@
 import json
 import os
 import secrets
+import threading
+import time
 from datetime import datetime, timedelta, UTC
 from threading import Lock
 
@@ -27,6 +29,8 @@ def store_session(session_id: str, user_id: str, expiry_time: datetime, csrf_tok
 
         with open(sessions_file, "w", encoding="utf-8") as f:
             json.dump(sessions, f, indent=4)
+
+    cleanup_expired_sessions()
 
 def generate_session(user_id: str) -> tuple[str, str]:
     now = datetime.now(UTC)
@@ -87,6 +91,8 @@ def update_expiry(session_id: str):
         with open(sessions_file, "w", encoding="utf-8") as f:
             json.dump(sessions, f, indent=4)
 
+    cleanup_expired_sessions()
+
 def remove_session(session_id: str):
     with session_lock:        
         with open(sessions_file, "r", encoding="utf-8") as f:
@@ -103,4 +109,43 @@ def remove_session(session_id: str):
         with open(sessions_file, "w", encoding="utf-8") as f:
             json.dump(sessions, f, indent=4)
 
-        return session
+    cleanup_expired_sessions()
+
+    return session
+    
+def cleanup_expired_sessions():
+    now = datetime.now(UTC)
+
+    with session_lock:
+        if not os.path.exists(sessions_file):
+            return
+        
+        with open(sessions_file, "r", encoding="utf-8") as f:
+            try:
+                sessions = json.load(f)
+            except json.JSONDecodeError:
+                return
+            
+        updated_sessions = {}
+
+        for session_id, data in sessions.items():
+            try:
+                expiry = datetime.fromisoformat(data["expires_at"])
+                if expiry > now:
+                    updated_sessions[session_id] = data
+            except Exception:
+                # possibly corrupted session, so exclude it
+                continue
+
+        if len(updated_sessions) != len(sessions):
+            with open(sessions_file, "w", encoding="utf-8") as f:
+                json.dump(updated_sessions, f, indent=4)
+
+def session_cleanup_worker(interval_seconds=600):
+    while True:
+        time.sleep(interval_seconds)
+        cleanup_expired_sessions()
+
+def start_cleanup_thread():
+    thread = threading.Thread(target=session_cleanup_worker, daemon=True)
+    thread.start()
