@@ -63,6 +63,14 @@ async def auth_middleware(request: Request, call_next):
     if not result["valid"]:
         return JSONResponse(status_code=401, content={"detail": result["error"]})
     
+    if result["valid"]:
+        session_ip = result.get("ip")
+        if session_id and session_ip != request.client.host:
+            log_system_event(result["user_id"], "IP_Mismatch", "Session IP differs to request IP.", request.client.host)
+            
+            # We can make this block requests, but would likely break anyone connecting through a mobile network where their IP might change
+            # return JSONResponse(status_code=401, content={"detail": "Session IP mismatch"})
+    
     request.state.user_id = result["user_id"]
 
     if request.method in ["POST", "PUT", "PATCH", "DELETE"]:
@@ -148,7 +156,6 @@ ip_attempts = {}
 def login_user(credentials: UserLogin, response: Response, request: Request):
 
     now = datetime.now(UTC)
-
     client_ip = request.client.host
 
     ip_data = ip_attempts.get(client_ip, {
@@ -187,7 +194,7 @@ def login_user(credentials: UserLogin, response: Response, request: Request):
 
                 if now < lock_time:
 
-                    log_system_event(user["id"], "Blocked_Login", "Attempt to log in to locked account.")
+                    log_system_event(user["id"], "Blocked_Login", "Attempt to log in to locked account.", client_ip)
                     raise HTTPException(status_code=401, detail="Invalid username or password.")
                 
                 else:
@@ -196,7 +203,7 @@ def login_user(credentials: UserLogin, response: Response, request: Request):
                     user["failed_attempts"] = 0
 
             if user.get("permanently_locked"):
-                log_system_event(user["id"], "Blocked_login", "Permanent Lock")
+                log_system_event(user["id"], "Blocked_login", "Permanent Lock", client_ip)
                 raise HTTPException(status_code=401, detail="Invalid username or password.")
 
             # Check password
@@ -207,7 +214,7 @@ def login_user(credentials: UserLogin, response: Response, request: Request):
 
                 write_json("users.json", users)
 
-                session_id, csrf_token = generate_session(user["id"])
+                session_id, csrf_token = generate_session(user["id"], client_ip)
 
                 response.set_cookie(
                     key="session_id",
@@ -227,7 +234,7 @@ def login_user(credentials: UserLogin, response: Response, request: Request):
                     max_age=600
                 )
 
-                log_system_event(user["id"], "Successful_Login", f"User {user["username"]} successfully logged in.")
+                log_system_event(user["id"], "Successful_Login", f"User {user["username"]} successfully logged in.", client_ip)
 
                 return user
             
@@ -257,12 +264,12 @@ def login_user(credentials: UserLogin, response: Response, request: Request):
                     user["permanently_locked"] = True
                     user["lock_until"] = None
 
-                    log_system_event(user["id"], "Account_Permanently_Locked", "Multiple lockouts within time window.")
+                    log_system_event(user["id"], "Account_Permanently_Locked", "Multiple lockouts within time window.", client_ip)
                 else:
-                    log_system_event(user["id"], "Account_Locked", "Too many failed login attempts.")
+                    log_system_event(user["id"], "Account_Locked", "Too many failed login attempts.", client_ip)
 
             else:
-                log_system_event(user["id"], "Unsuccessful_Login", f"Wrong password entered for user {user["username"]}.")
+                log_system_event(user["id"], "Unsuccessful_Login", f"Wrong password entered for user {user["username"]}.", client_ip)
             
             write_json("users.json", users)
 
@@ -270,7 +277,7 @@ def login_user(credentials: UserLogin, response: Response, request: Request):
 
     # Unknown username or failed login
     if not user_found:
-        log_system_event(None, "Unsuccessful_Login", f"Unknown username: {credentials.username}")
+        log_system_event(None, "Unsuccessful_Login", f"Unknown username: {credentials.username}", client_ip)
         
     raise HTTPException(status_code=401, detail="Invalid username or password.")
 
@@ -278,6 +285,7 @@ def login_user(credentials: UserLogin, response: Response, request: Request):
 @app.post("/api/logout")
 def logout(request: Request, response: Response, force: bool = False):
 
+    client_ip = request.client.host
     session_id = request.cookies.get("session_id")
 
     if not session_id:
@@ -315,7 +323,8 @@ def logout(request: Request, response: Response, force: bool = False):
         log_system_event(
             user_id=user_id, 
             action="SUCCESSFUL_LOGOUT", 
-            details=f"User logged out. Forced: {force}"
+            details=f"User logged out. Forced: {force}",
+            ip=client_ip
         )
 
     return {"message": "Logged out successfully"}
@@ -360,6 +369,7 @@ def get_fault_by_marker(marker_id: str):
 @app.post("/api/faults", response_model=FaultOut, status_code=201)
 def create_new_fault(payload: FaultCreate, request: Request):
     
+    client_ip = request.client.host
     user_id = request.state.user_id
     now = datetime.now(UTC)
 
@@ -376,11 +386,13 @@ def create_new_fault(payload: FaultCreate, request: Request):
             log_system_event(
                 user_id=user_id, 
                 action="RATE_LIMIT_EXCEEDED", 
-                details="User attempted to submit multiple faults within 5 seconds."
+                details="User attempted to submit multiple faults within 5 seconds.",
+                ip=client_ip
             )
             raise HTTPException(
                 status_code=429, # Standard HTTP code for "Too Many Requests"
-                detail=f"Please wait {5 - int(time_since_last)} seconds before submitting another fault."
+                detail=f"Please wait {5 - int(time_since_last)} seconds before submitting another fault.",
+                ip=client_ip
             )
         
             
@@ -416,7 +428,8 @@ def create_new_fault(payload: FaultCreate, request: Request):
     log_system_event(
         user_id=user_id, 
         action="FAULT_REPORTED", 
-        details=f"New fault logged at {payload.location}: {payload.title}"
+        details=f"New fault logged at {payload.location}: {payload.title}",
+        ip=client_ip
     )
 
     return new_fault
@@ -426,6 +439,7 @@ def create_new_fault(payload: FaultCreate, request: Request):
 @app.patch("/api/faults/{fault_id}", response_model=FaultOut)
 def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
     
+    client_ip = request.client.host
     faults = read_json("faults.json")
     users = read_json("users.json")
     
@@ -451,7 +465,8 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
                     log_system_event(
                         user_id=request.state.user_id, 
                         action="UNAUTHORIZED_ACTION", 
-                        details=f"Technician attempted to resolve/assign fault {fault_id}."
+                        details=f"Technician attempted to resolve/assign fault {fault_id}.",
+                        ip=client_ip
                     )
                     raise HTTPException(status_code=403, detail="Technicians cannot assign or resolve faults. Supervisor approval required.")
                 
@@ -480,7 +495,8 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
             log_system_event(
                 user_id=request.state.user_id, 
                 action=f"FAULT_UPDATED", 
-                details=f"Fault {fault_id} updated by {role}."
+                details=f"Fault {fault_id} updated by {role}.",
+                ip=client_ip
             )
 
             return fault
@@ -494,6 +510,7 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
 @app.delete("/api/faults/{fault_id}")
 def delete_fault(fault_id: int, request: Request):
     
+    client_ip = request.client.host
     users = read_json("users.json")
     faults = read_json("faults.json")
 
@@ -512,7 +529,8 @@ def delete_fault(fault_id: int, request: Request):
         log_system_event(
             user_id=request.state.user_id, 
             action="UNAUTHORIZED_DELETE_ATTEMPT", 
-            details=f"Technician attempted to delete fault {fault_id}."
+            details=f"Technician attempted to delete fault {fault_id}.",
+            ip=client_ip
         )
         raise HTTPException(status_code=403, detail="Only Supervisors can delete faults.")
 
@@ -537,7 +555,8 @@ def delete_fault(fault_id: int, request: Request):
     log_system_event(
         user_id=request.state.user_id, 
         action="FAULT_DELETED", 
-        details=f"Fault {fault_id} ('{fault_to_delete['title']}') deleted by {role}."
+        details=f"Fault {fault_id} ('{fault_to_delete['title']}') deleted by {role}.",
+        ip=client_ip
     )
 
     return {"message": f"Fault {fault_id} successfully deleted."}
@@ -562,6 +581,8 @@ def get_tool_by_marker(marker_id: str):
 # Handles the AR tool checkout/check-in logic automatically based on the current status
 @app.post("/api/tools/scan", response_model=ToolOut)
 def scan_tool_marker(payload: ToolScan, request: Request):
+
+    client_ip = request.client.host
     tools = read_json("tools.json")
     
     for tool in tools:
@@ -577,7 +598,8 @@ def scan_tool_marker(payload: ToolScan, request: Request):
                 log_system_event(
                     user_id=request.state.user_id, 
                     action="TOOL_CHECKOUT", 
-                    details=f"Tool {tool['id']} checked out successfully."
+                    details=f"Tool {tool['id']} checked out successfully.",
+                    ip=client_ip
                 )
 
             # Tool is checked out by THIS user: Check it back in
@@ -591,7 +613,8 @@ def scan_tool_marker(payload: ToolScan, request: Request):
                 log_system_event(
                     user_id=request.state.user_id, 
                     action="TOOL_CHECKIN", 
-                    details=f"Tool {tool['id']} checked back in."
+                    details=f"Tool {tool['id']} checked back in.",
+                    ip=client_ip
                 )
                 
             # Tool is checked out by SOMEONE ELSE: No Access

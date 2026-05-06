@@ -9,7 +9,7 @@ from threading import Lock
 sessions_file = "data/sessions.json"
 session_lock = Lock()
 
-def store_session(session_id: str, user_id: str, expiry_time: datetime, csrf_token: str):
+def store_session(session_id: str, user_id: str, expiry_time: datetime, csrf_token: str, ip: str):
     with session_lock:
         sessions = {}
         if os.path.exists(sessions_file) and os.path.getsize(sessions_file) > 0:
@@ -24,7 +24,8 @@ def store_session(session_id: str, user_id: str, expiry_time: datetime, csrf_tok
         sessions[session_id] = {
             "user_id": user_id,
             "expires_at": expiry_time.isoformat(),
-            "csrf_token": csrf_token
+            "csrf_token": csrf_token,
+            "ip": ip
         }
 
         with open(sessions_file, "w", encoding="utf-8") as f:
@@ -32,13 +33,13 @@ def store_session(session_id: str, user_id: str, expiry_time: datetime, csrf_tok
 
     cleanup_expired_sessions()
 
-def generate_session(user_id: str) -> tuple[str, str]:
+def generate_session(user_id: str, ip: str) -> tuple[str, str]:
     now = datetime.now(UTC)
     expiry_time = now + timedelta(minutes=10)
     session_id = secrets.token_urlsafe(32)
     csrf_token = secrets.token_urlsafe(32)
 
-    store_session(session_id, user_id, expiry_time, csrf_token)
+    store_session(session_id, user_id, expiry_time, csrf_token, ip)
 
     return session_id, csrf_token
 

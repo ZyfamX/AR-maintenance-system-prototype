@@ -78,13 +78,14 @@ log_lock = Lock()
 
 audit_log_file = os.path.join("data", "audit.log")
 
-def log_system_event(user_id: int | None, action: str, details: str):
+def log_system_event(user_id: int | None, action: str, details: str, ip: str | None = None):
     
     base_entry = {
         "timestamp": datetime.now(UTC).isoformat() + "Z",
         "user_id": user_id,
         "action": sanitise_for_log(action),
         "details": sanitise_for_log(details),
+        "ip": ip
     }
     
     with log_lock:
