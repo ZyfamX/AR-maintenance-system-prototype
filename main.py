@@ -313,7 +313,7 @@ def create_new_fault(payload: FaultCreate, request: Request):
     user_id = request.state.user_id
     now = datetime.now(UTC)
 
-    # --- 1. RATE LIMITING LOGIC (Requirement F5) ---
+    # --- RATE LIMITING LOGIC (Requirement F5) ---
     last_submission = fault_submission_timestamps.get(user_id)
     
     if last_submission:
@@ -338,7 +338,7 @@ def create_new_fault(payload: FaultCreate, request: Request):
     fault_submission_timestamps[user_id] = now
     # -----------------------------------------------
 
-    # 2. Proceed with normal fault creation
+    # Proceed with normal fault creation
     faults = read_json("faults.json")
     
     # Create new ID (highest ID + 1)
@@ -353,7 +353,7 @@ def create_new_fault(payload: FaultCreate, request: Request):
         "status": "In-Review", # New faults start in "In-Review" status
         "Priority": None, # Priority is set by Supervisor after review
         "reported_by_id": user_id,
-        "timestamp": now.isoformat() + "Z", # Standardized UTC format
+        "timestamp": now.isoformat(),
         "assigned_to_id": None,      
         "resolved_by_id": None,
         "notes": None
@@ -379,7 +379,7 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
     faults = read_json("faults.json")
     users = read_json("users.json")
     
-    # 1. Fetch the current user's role from the database using their session ID
+    # Fetch the current user's role from the database using their session ID
     current_user = next((u for u in users if u["id"] == request.state.user_id), None)
     
     if not current_user:
@@ -410,7 +410,7 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
                     fault["notes"] = payload.notes
                     fault["status"] = payload.status # e.g., keeping it as "Assigned"
 
-            # 3. RBAC ENFORCEMENT: SUPERVISOR RULES
+            # RBAC ENFORCEMENT: SUPERVISOR RULES
             elif role in ["Supervisor", "Administrator"]:
 
                 fault["status"] = payload.status
@@ -423,10 +423,10 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
                 if payload.notes is not None:
                     fault["notes"] = payload.notes
 
-            # 4. Save to database
+            # Save to database
             write_json("faults.json", faults)
 
-            # 5. Log the successful update
+            # Log the successful update
             log_system_event(
                 user_id=request.state.user_id, 
                 action=f"FAULT_UPDATED", 
@@ -447,7 +447,7 @@ def delete_fault(fault_id: int, request: Request):
     users = read_json("users.json")
     faults = read_json("faults.json")
 
-    # 1. Fetch the current user's role
+    # Fetch the current user's role
     current_user = next((u for u in users if u["id"] == request.state.user_id), None)
     
     if not current_user:
@@ -455,7 +455,7 @@ def delete_fault(fault_id: int, request: Request):
         
     role = current_user.get("role")
 
-    # 2. RBAC ENFORCEMENT: ONLY SUPERVISORS CAN DELETE
+    # RBAC ENFORCEMENT: ONLY SUPERVISORS CAN DELETE
     if role not in ["Supervisor", "Administrator"]:
         
         # Log the security violation!
@@ -466,7 +466,7 @@ def delete_fault(fault_id: int, request: Request):
         )
         raise HTTPException(status_code=403, detail="Only Supervisors can delete faults.")
 
-    # 3. Find and remove the fault
+    # Find and remove the fault
     fault_to_delete = None
 
     for i, fault in enumerate(faults):
@@ -480,10 +480,10 @@ def delete_fault(fault_id: int, request: Request):
         raise HTTPException(status_code=404, detail="Fault ID not found")
 
 
-    # 4. Save the updated database
+    # Save the updated database
     write_json("faults.json", faults)
 
-    # 5. Log the deletion to the audit trail
+    # Log the deletion to the audit trail
     log_system_event(
         user_id=request.state.user_id, 
         action="FAULT_DELETED", 
@@ -522,7 +522,7 @@ def scan_tool_marker(payload: ToolScan, request: Request):
             if tool["status"] == "Available":
                 tool["status"] = "Checked-Out"
                 tool["current_user_id"] = request.state.user_id
-                tool["checkout_timestamp"] = datetime.now(UTC).isoformat() + "Z"
+                tool["checkout_timestamp"] = datetime.now(UTC).isoformat()
                 
                 log_system_event(
                     user_id=request.state.user_id, 

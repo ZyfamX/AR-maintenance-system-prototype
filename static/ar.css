@@ -1,0 +1,448 @@
+/* =========================================================
+   AR SCANNER - STYLESHEET
+
+   TABLE OF CONTENTS:
+   01. BASE STYLES & UTILITIES
+   02. AR SCENE
+   03. 2D OVERLAY
+   04. TOP BAR
+   05. INFO PANEL (Bottom Sheet)
+   06. INFO PANEL CONTENT (Rows, Labels, Dividers)
+   07. ACTION BUTTONS (Check-In / Check-Out)
+   08. BOTTOM NAV BAR
+   09. MODE SWITCH (Tool / Fault)
+   10. FALLBACK SCREEN
+========================================================= */
+
+
+/* =========================================================
+   01. BASE STYLES & UTILITIES
+========================================================= */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0f172a;
+    color: #f8fafc;
+    overflow: hidden;
+    height: 100dvh;
+    width: 100vw;
+}
+
+.hidden { display: none !important; }
+
+
+/* =========================================================
+   02. AR SCENE
+========================================================= */
+
+/* The A-Frame camera feed sits behind everything.
+ * A-Frame also injects a <canvas> — we explicitly set both to z-index 0
+ * so the overlay and info panel compositor layers sit above them. */
+#arScene {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+#arScene canvas {
+    z-index: 0 !important;
+    position: relative;
+}
+
+
+/* =========================================================
+   03. 2D OVERLAY
+========================================================= */
+
+/*
+ * Transparent full-screen container that sits above the AR scene.
+ * pointer-events: none lets camera touches pass through by default —
+ * individual children that need interaction set pointer-events: all.
+ */
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Same compositor layer promotion as #info-panel */
+    z-index: 9998;
+    isolation: isolate;
+    will-change: transform;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+
+/* =========================================================
+   04. TOP BAR
+========================================================= */
+
+#top-bar {
+    pointer-events: all;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(8px);
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(71, 85, 105, 0.5);
+}
+
+#top-bar h1 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #f8fafc;
+    letter-spacing: 0.05em;
+}
+
+/* Scan status message — updates dynamically from ar.js */
+#status {
+    font-size: 0.8rem;
+    color: #f0c040;
+    flex: 1;
+    text-align: right;
+    padding-left: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   05. INFO PANEL (Bottom Sheet)
+========================================================= */
+#info-panel {
+    pointer-events: all;
+    position: fixed;
+    width: calc(100% - 40px);
+    max-width: 360px;
+    left: 50%;
+    right: auto;
+    bottom: 110px; 
+    border-radius: 20px;
+    z-index: 9999;
+    isolation: isolate;
+    will-change: transform, opacity;
+    
+    /* Highly see-through frosted glass */
+    background: rgba(180, 130, 20, 0.35); 
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px); 
+    
+    border: 1px solid rgba(255, 220, 100, 0.4);
+    padding: 16px 20px 24px;
+    
+    /* Pushed down, fully transparent, and completely hidden */
+    transform: translate(-50%, 100%);
+    opacity: 0;
+    visibility: hidden; 
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, visibility 0.35s;
+}
+
+#info-panel.visible {
+    transform: translate(-50%, 0);
+    opacity: 1;
+    visibility: visible;
+}
+
+#panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: center; 
+    position: relative; 
+    min-height: 48px; 
+    margin-bottom: 12px;
+}
+
+#panel-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #f8fafc; /* Changed to white for better contrast on clear glass */
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+#panel-close {
+    position: absolute;
+    right: 0; /* MOVED TO TOP RIGHT */
+    top: 0;
+    
+    /* WCAG AAA Contrast Setup */
+    background: #1e293b; 
+    border: 2px solid #ffffff; 
+    color: #ffffff;
+    
+    font-size: 1.5rem;
+    cursor: pointer;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+#panel-close:active {
+    background: #334155; 
+    transform: scale(0.95);
+}
+
+
+/* =========================================================
+   06. INFO PANEL CONTENT (Rows, Labels, Dividers)
+========================================================= */
+
+/* Each data field is a flex row: label + value side by side */
+.ar-info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: #1e293b;
+    padding: 2px 0;
+}
+
+.ar-label {
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* Dashed separator between sections within the panel */
+.ar-divider {
+    border: none;
+    border-top: 1px dashed rgba(30, 41, 59, 0.4);
+    margin: 8px 0;
+}
+
+/* Description and notes text is slightly smaller and muted */
+.ar-description span {
+    font-size: 0.82rem;
+    opacity: 0.85;
+}
+
+
+/* =========================================================
+   07. ACTION BUTTONS (Check-In / Check-Out)
+========================================================= */
+
+.ar-action-btn {
+    display: block;
+    width: 160px;
+    margin: 16px auto 0;
+    padding: 12px 0;
+    border: none;
+    border-radius: 999px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.ar-action-btn:active   { transform: scale(0.96); }
+.ar-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Tool is Available → green Check-Out button */
+.ar-btn-checkout {
+    background: #bbf7d0;
+    color: #065f46;
+}
+
+/* Tool is checked out by current user → red Check-In button */
+.ar-btn-checkin {
+    background: #fecaca;
+    color: #7f1d1d;
+}
+
+
+/* =========================================================
+   08. BOTTOM NAV BAR
+========================================================= */
+
+#bottom-nav {
+    pointer-events: all;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px 20px;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid rgba(71, 85, 105, 0.4);
+}
+
+#btn-home {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: #3b82f6;
+    border: none;
+    cursor: pointer;
+    font-size: 1.6rem;
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+
+#btn-home:hover { background: #2563eb; }
+
+
+/* =========================================================
+   09. MODE SWITCH (Tool / Fault)
+========================================================= */
+
+/*
+ * Pill-style toggle in the bottom nav.
+ * Clicking a button sets window.scanMode in ar.js and applies the active class.
+ * Active classes are mutually exclusive — only one can be set at a time.
+ */
+#mode-switch {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 5px;
+    gap: 4px;
+}
+
+.mode-btn {
+    flex: 1;
+    padding: 10px 0;
+    border: none;
+    border-radius: 9px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: background 0.2s, color 0.2s;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+/* Tool mode active — orange */
+.mode-btn.active-tool {
+    background: #f97316;
+    color: #fff;
+}
+
+/* Fault mode active — red */
+.mode-btn.active-fault {
+    background: #ef4444;
+    color: #fff;
+}
+
+
+/* =========================================================
+   10. FALLBACK SCREEN
+========================================================= */
+
+/*
+ * Shown full-screen when camera access is denied or unavailable.
+ * Replaces the AR scene entirely — z-index 100 covers everything.
+ */
+#fallback {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: #0f172a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 40px;
+    text-align: center;
+}
+
+#fallback.hidden { display: none; }
+
+#fallback .fallback-icon { font-size: 4rem; }
+
+#fallback h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+#fallback p {
+    color: #94a3b8;
+    font-size: 0.95rem;
+    max-width: 320px;
+    line-height: 1.5;
+}
+
+#fallback a {
+    color: #f97316;
+    text-decoration: underline;
+}
+
+
+
+
+/* =========================================================
+   11. LANDSCAPE ORIENTATION UI FIXES
+========================================================= */
+@media (orientation: landscape) {
+    #overlay { display: block; }
+
+    #top-bar {
+        position: absolute;
+        top: 0; left: 0; right: 0;
+    }
+
+    #info-panel {
+        left: auto;
+        right: max(20px, env(safe-area-inset-right));
+        /* Push straight down in landscape */
+        transform: translate(0, 150%);
+    }
+
+    #info-panel.visible {
+        transform: translate(0, 0);
+    }
+
+    /* --- NATIVE CAMERA APP THUMB-LOCK --- */
+    #bottom-nav {
+        position: absolute;
+        /* Positioned above the golden info panel */
+        top: 30%; 
+        /* Locked to the right thumb area, with a 40px buffer so rotation doesn't clip it */
+        right: max(40px, env(safe-area-inset-right)); 
+        left: auto;
+        bottom: auto;
+        /* Rotate 90 degrees to match the native camera feel */
+        transform: translateY(-50%) rotate(-90deg);
+        width: max-content;
+        margin: 0;
+        padding: 10px 15px;
+        border-radius: 16px;
+    }
+
+
+    #btn-home {
+        width: 55px; height: 55px; font-size: 1.6rem;
+    }
+    
+    .mode-btn {
+        padding: 14px 0; font-size: 1.1rem;
+    }
+}

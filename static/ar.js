@@ -1,23 +1,27 @@
-/**
- * ar.js — AR Maintenance System
- *
- * FIELD REFERENCE (from schemas.py / JSON files):
- * ─────────────────────────────────────────────────
- * ToolOut:   id, marker_id, tool_type, status ("Available"|"Checked-Out"),
- *            storage_location, current_user_id (int|null), checkout_timestamp (str|null)
- *
- * FaultOut:  id, marker_id, title, description, location,
- *            status ("Active"|"In-Review"|"In-Progress"|"Resolved"),
- *            priority ("Low"|"Medium"|"High"|null), timestamp,
- *            reported_by_id, assigned_to_id (int|null),
- *            resolved_by_id (int|null), notes (str|null)
- *
- * UserOut:   id, username, first_name, last_name, role
- *
- * ToolScan payload: { marker_id } only — backend reads user from session cookie.
- */
-
 import { getTools, getFaults, getUsers, scanTool } from './api.js';
+
+// --- CUSTOM A-FRAME COMPONENT: Auto-Scale & Billboard ---
+AFRAME.registerComponent('smart-hud', {
+    tick: function () {
+        const camera = this.el.sceneEl.camera;
+        if (!camera) return;
+
+        // Get the true 3D positions of both the HUD and the Camera
+        const hudPos = new THREE.Vector3();
+        this.el.object3D.getWorldPosition(hudPos);
+        
+        const cameraPos = new THREE.Vector3();
+        camera.getWorldPosition(cameraPos);
+
+        // BILLBOARD FIX: Force the flat side of the panel to look directly at the phone lens
+        this.el.object3D.lookAt(cameraPos);
+
+        // Auto-Scale based on distance
+        const distance = hudPos.distanceTo(cameraPos);
+        const scaleFactor = Math.max(0.6, distance * 0.15); 
+        this.el.object3D.scale.set(scaleFactor, scaleFactor, scaleFactor);
+    }
+});
 
 // ─── DOM References ───────────────────────────────────────────────────────────
 
@@ -39,10 +43,10 @@ let usersById      = {};   // 7              → UserOut
 let activeItem = null;
 let activeType = null;
 
-// Read logged-in user from sessionStorage (set by your login flow)
+// Read logged-in user from storage (Matches the key set in ui.js)
 let currentUser = null;
 try {
-    const stored = sessionStorage.getItem('user');
+    const stored = localStorage.getItem('ar_user'); 
     if (stored) currentUser = JSON.parse(stored);
 } catch (_) {}
 
@@ -126,40 +130,189 @@ async function loadData() {
 // ─── Marker Listeners ─────────────────────────────────────────────────────────
 
 function registerMarkerListeners() {
-    const scene = document.getElementById('arScene');
-    if (!scene) { console.warn('[AR] No #arScene found.'); return; }
+    const markers = document.querySelectorAll('a-marker');
+    if (markers.length === 0) {
+        console.warn('[AR] No markers found in DOM.');
+        return;
+    }
 
-    scene.addEventListener('loaded', () => {
-        const markers = scene.querySelectorAll('a-marker');
-        markers.forEach(marker => {
-            const barcodeValue = marker.getAttribute('value');
-            if (barcodeValue === null) return;
-            const markerId = String(barcodeValue);
-            marker.addEventListener('markerFound', () => onMarkerFound(markerId));
-            marker.addEventListener('markerLost',  () => onMarkerLost(markerId));
-        });
-        console.log(`[AR] Listening on ${markers.length} markers.`);
+    markers.forEach(marker => {
+        const barcodeValue = marker.getAttribute('value');
+        if (barcodeValue === null) return;
+        const markerId = String(barcodeValue);
+
+        // FIXED: The DOM is already loaded, so we attach the listeners directly!
+        marker.addEventListener('markerFound', () => onMarkerFound(markerId));
+        marker.addEventListener('markerLost',  () => onMarkerLost(markerId));
     });
+
+    console.log(`[AR] Successfully listening on ${markers.length} markers.`);
 }
 
 // ─── Marker Events ────────────────────────────────────────────────────────────
 
 function onMarkerFound(markerId) {
     const mode = (window.scanMode === 'fault') ? 'fault' : 'tool';
+    const markerEl = document.getElementById(`barcode-${markerId}`);
 
     if (statusEl) {
         statusEl.textContent = `${mode === 'tool' ? '🔧 Tool' : '⚠️ Fault'} marker: ${markerId}`;
         statusEl.style.color = '#7ef7a0';
     }
 
+    // Default 3D text if no match is found
+    let titleText = "Unknown Marker";
+    let textColor = "#f0c040";
+
     if (mode === 'tool') {
         const tool = toolsByMarker[markerId];
-        if (tool) { activeItem = tool; activeType = 'tool'; renderToolPanel(tool); }
-        else       { activeItem = null; activeType = null; renderUnknownPanel(markerId, 'tool'); }
+        if (tool) { 
+            activeItem = tool; activeType = 'tool'; 
+            titleText = tool.tool_type; // Display the Tool Name in 3D
+            textColor = tool.status === 'Available' ? '#22c55e' : '#f97316'; // Green if available
+            renderToolPanel(tool); 
+        } else {       
+            activeItem = null; activeType = null; renderUnknownPanel(markerId, 'tool'); 
+        }
     } else {
         const fault = faultsByMarker[markerId];
-        if (fault) { activeItem = fault; activeType = 'fault'; renderFaultPanel(fault); }
-        else        { activeItem = null; activeType = null; renderUnknownPanel(markerId, 'fault'); }
+        if (fault) { 
+            activeItem = fault; activeType = 'fault'; 
+            titleText = fault.title; // Display the Fault Title in 3D
+            textColor = fault.priority === 'High' ? '#ef4444' : '#f97316'; // Red if high priority
+            renderFaultPanel(fault); 
+        } else {        
+            activeItem = null; activeType = null; renderUnknownPanel(markerId, 'fault'); 
+        }
+    }
+
+    // 3D ANNOTATION INJECTION (DYNAMIC REAL-TIME HUD)
+    if (markerEl) {
+        const box = markerEl.querySelector('a-box');
+        if (box) box.setAttribute('visible', 'false');
+
+        let hudWrapper = markerEl.querySelector('.ar-hud-wrapper');
+        
+        // Build the elements ONCE if they don't exist
+        if (!hudWrapper) {
+            hudWrapper = document.createElement('a-entity');
+            hudWrapper.setAttribute('class', 'ar-hud-wrapper');
+
+            const line = document.createElement('a-entity');
+            line.setAttribute('class', 'hud-line');
+            hudWrapper.appendChild(line);
+
+            const hudEl = document.createElement('a-entity');
+            hudEl.setAttribute('class', 'ar-hud');
+            hudEl.setAttribute('smart-hud', ''); 
+
+            const bg = document.createElement('a-plane');
+            bg.setAttribute('class', 'hud-bg');
+            bg.setAttribute('color', '#0f172a');
+            bg.setAttribute('width', '3.2');
+            bg.setAttribute('height', '1.4');
+            bg.setAttribute('material', 'shader: flat; transparent: true; opacity: 0.85; depthWrite: false;'); 
+            hudEl.appendChild(bg);
+
+            const accent = document.createElement('a-plane');
+            accent.setAttribute('class', 'hud-accent');
+            accent.setAttribute('width', '0.05');
+            accent.setAttribute('height', '1.4');
+            accent.setAttribute('material', 'shader: flat; transparent: true; opacity: 1.0; depthWrite: false;');
+            hudEl.appendChild(accent);
+
+            const title = document.createElement('a-entity');
+            title.setAttribute('class', 'hud-title');
+            hudEl.appendChild(title);
+
+            const idText = document.createElement('a-entity');
+            idText.setAttribute('class', 'hud-id');
+            hudEl.appendChild(idText);
+
+            const locText = document.createElement('a-entity');
+            locText.setAttribute('class', 'hud-loc');
+            hudEl.appendChild(locText);
+
+            const statusLabel = document.createElement('a-entity');
+            statusLabel.setAttribute('class', 'hud-status-label');
+            statusLabel.setAttribute('text', 'value: STATUS:; color: #cbd5e1; width: 2.0; align: left; anchor: left; wrapCount: 25; font: roboto;');
+            hudEl.appendChild(statusLabel);
+
+            const statusValue = document.createElement('a-entity');
+            statusValue.setAttribute('class', 'hud-status-val');
+            hudEl.appendChild(statusValue);
+
+            hudWrapper.appendChild(hudEl);
+            markerEl.appendChild(hudWrapper);
+        }
+
+        // DYNAMIC MATH: Calculate left/right direction EVERY TIME it is scanned
+        let dir = 1; // Default projects Right
+        const cameraEl = document.querySelector('[camera]');
+        if (cameraEl && cameraEl.components.camera) {
+            const camera = cameraEl.components.camera.camera;
+            const markerPos = new THREE.Vector3();
+            markerEl.object3D.getWorldPosition(markerPos);
+            markerPos.project(camera); 
+            if (markerPos.x > 0) dir = -1; // If marker is on Right, project Left
+        }
+
+        const offsetX = 1.5 * dir;
+        const centerX = 1.6 * dir;
+        const accentX = dir === 1 ? 0.025 : -3.175; 
+        const textX   = dir === 1 ? 0.15 : -3.05;   
+        const valX    = dir === 1 ? 1.0 : -2.2;     
+
+        // Apply positions based on the calculated direction
+        hudWrapper.querySelector('.ar-hud').setAttribute('position', `${offsetX} 1 0`);
+        hudWrapper.querySelector('.hud-bg').setAttribute('position', `${centerX} 0.7 -0.1`);
+        hudWrapper.querySelector('.hud-accent').setAttribute('position', `${accentX} 0.7 0.01`);
+        hudWrapper.querySelector('.hud-title').setAttribute('position', `${textX} 1.1 0.1`);
+        hudWrapper.querySelector('.hud-id').setAttribute('position', `${textX} 0.75 0.1`);
+        hudWrapper.querySelector('.hud-loc').setAttribute('position', `${textX} 0.45 0.1`);
+        hudWrapper.querySelector('.hud-status-label').setAttribute('position', `${textX} 0.15 0.1`);
+        hudWrapper.querySelector('.hud-status-val').setAttribute('position', `${valX} 0.15 0.1`);
+
+        // Populate Live Data
+        if (activeItem) {
+            const lineEl = hudWrapper.querySelector('.hud-line');
+            const accentEl = hudWrapper.querySelector('.hud-accent');
+            const titleEl = hudWrapper.querySelector('.hud-title');
+            const idTextEl = hudWrapper.querySelector('.hud-id');
+            const locTextEl = hudWrapper.querySelector('.hud-loc');
+            const statusValueEl = hudWrapper.querySelector('.hud-status-val');
+
+            let color, titleStr, idStr, locStr, statusStr;
+            const COLOR_GREEN  = '#4ade80';
+            const COLOR_ORANGE = '#fb923c';
+            const COLOR_RED    = '#f87171';
+
+
+            if (activeType === 'tool') {
+                color = activeItem.status === 'Available' ? COLOR_GREEN : COLOR_ORANGE;
+                titleStr = activeItem.tool_type.toUpperCase();
+                idStr = `ID: ${activeItem.id}`;
+                locStr = `LOC: ${activeItem.storage_location || 'N/A'}`;
+                // FIX: Strip the "STATUS: " prefix to prevent duplication
+                statusStr = activeItem.status.toUpperCase(); 
+            } else if (activeType === 'fault') {
+                color = activeItem.priority === 'High' ? COLOR_RED : COLOR_ORANGE;
+                titleStr = activeItem.title.toUpperCase();
+                idStr = `ID: F-${activeItem.id}`;
+                let loc = activeItem.location || 'N/A';
+                if (loc.length > 35) loc = loc.substring(0, 32) + '...';
+                locStr = `LOC: ${loc}`;
+                // FIX: Strip the "STATUS: " prefix to prevent duplication
+                statusStr = activeItem.status.toUpperCase(); 
+            }
+
+            lineEl.setAttribute('line', `start: 0 0 0; end: ${offsetX} 1 0; color: ${color}; opacity: 0.9`);
+            accentEl.setAttribute('color', color);
+            titleEl.setAttribute('text', `value: ${titleStr}; color: #ffffff; width: 3.0; align: left; anchor: left; wrapCount: 20; font: roboto;`);
+            idTextEl.setAttribute('text', `value: ${idStr}; color: #94a3b8; width: 2.8; align: left; anchor: left; wrapCount: 30; font: roboto;`);
+            locTextEl.setAttribute('text', `value: ${locStr}; color: #f8fafc; width: 2.8; align: left; anchor: left; wrapCount: 30; font: roboto;`);
+            statusValueEl.setAttribute('text', `value: ${statusStr}; color: ${color}; width: 2.6; align: left; anchor: left; wrapCount: 25; font: roboto;`);
+        }
     }
 
     showInfoPanel();
@@ -178,47 +331,12 @@ function onMarkerLost(markerId) {
 // ─── Panel: Tool ──────────────────────────────────────────────────────────────
 
 function renderToolPanel(tool) {
-    if (panelTitleEl) panelTitleEl.textContent = 'Tool View';
+    if (panelTitleEl) panelTitleEl.textContent = 'Action Required';
+    if (panelBodyEl) panelBodyEl.innerHTML = ''; 
 
-    // status is exactly "Available" or "Checked-Out" (from tools.json / ToolOut)
-    const isAvailable     = tool.status === 'Available';
-    const isCheckedOutByMe = !isAvailable && currentUser && tool.current_user_id === currentUser.id;
-
-    const statusColor = isAvailable ? '#22c55e' : '#ef4444';
-    const checkedOutByName = isAvailable ? '—'
-        : isCheckedOutByMe ? 'You'
-        : userName(tool.current_user_id);
-
-    if (panelBodyEl) {
-        panelBodyEl.innerHTML = `
-            <div class="ar-info-row">
-                <span class="ar-label">ID:</span>
-                <span>${tool.id ?? '—'}</span>
-            </div>
-            <div class="ar-info-row">
-                <span class="ar-label">Tool Type:</span>
-                <span>${tool.tool_type ?? '—'}</span>
-            </div>
-            <div class="ar-info-row">
-                <span class="ar-label">Storage:</span>
-                <span>${tool.storage_location ?? '—'}</span>
-            </div>
-            <hr class="ar-divider">
-            <div class="ar-info-row">
-                <span class="ar-label">Status:</span>
-                <span style="color:${statusColor};font-weight:700;">${tool.status}</span>
-            </div>
-            ${!isAvailable ? `
-            <div class="ar-info-row">
-                <span class="ar-label">Used by:</span>
-                <span>${checkedOutByName}</span>
-            </div>
-            <div class="ar-info-row">
-                <span class="ar-label">Since:</span>
-                <span>${formatTime(tool.checkout_timestamp)}</span>
-            </div>` : ''}
-        `;
-    }
+    const isAvailable = tool.status === 'Available';
+    // Using == instead of === to prevent integer/string mismatches
+    const isCheckedOutByMe = !isAvailable && currentUser && tool.current_user_id == currentUser.id;
 
     if (actionBtnEl) {
         if (isAvailable) {
@@ -228,7 +346,7 @@ function renderToolPanel(tool) {
             actionBtnEl.disabled      = false;
             actionBtnEl.onclick       = () => handleToolScan(tool);
         } else if (isCheckedOutByMe) {
-            actionBtnEl.textContent   = 'Check-In';
+            actionBtnEl.textContent   = 'Return Tool'; // Better UX text
             actionBtnEl.className     = 'ar-action-btn ar-btn-checkin';
             actionBtnEl.style.display = 'block';
             actionBtnEl.disabled      = false;
@@ -236,82 +354,19 @@ function renderToolPanel(tool) {
         } else {
             actionBtnEl.style.display = 'none';
             actionBtnEl.onclick       = null;
+            if (panelBodyEl) panelBodyEl.innerHTML = `<div style="text-align:center; color: #f8fafc; font-weight: bold; padding: 10px;">Tool checked out by User #${tool.current_user_id}</div>`;
         }
     }
 }
 
+
 // ─── Panel: Fault ─────────────────────────────────────────────────────────────
 
 function renderFaultPanel(fault) {
-    if (panelTitleEl) panelTitleEl.textContent = 'Fault View';
-
-    const statusColors = {
-        'Active':      '#ef4444',
-        'In-Review':   '#a855f7',
-        'In-Progress': '#3b82f6',
-        'Resolved':    '#22c55e',
-    };
-    const priorityColors = {
-        'High':   '#ef4444',
-        'Medium': '#f97316',
-        'Low':    '#facc15',
-    };
-
-    if (panelBodyEl) {
-        panelBodyEl.innerHTML = `
-            <div class="ar-info-row">
-                <span class="ar-label">Fault ID:</span>
-                <span>#${fault.id ?? '—'}</span>
-            </div>
-            <div class="ar-info-row">
-                <span class="ar-label">Title:</span>
-                <span>${fault.title ?? '—'}</span>
-            </div>
-            <div class="ar-info-row">
-                <span class="ar-label">Location:</span>
-                <span>${fault.location ?? '—'}</span>
-            </div>
-            <hr class="ar-divider">
-            <div class="ar-info-row">
-                <span class="ar-label">Status:</span>
-                <span style="color:${statusColors[fault.status] ?? '#94a3b8'};font-weight:700;">${fault.status ?? '—'}</span>
-            </div>
-            ${fault.priority ? `
-            <div class="ar-info-row">
-                <span class="ar-label">Priority:</span>
-                <span style="color:${priorityColors[fault.priority] ?? '#94a3b8'};font-weight:700;">${fault.priority}</span>
-            </div>` : ''}
-            <div class="ar-info-row">
-                <span class="ar-label">Reported by:</span>
-                <span>${userName(fault.reported_by_id)}</span>
-            </div>
-            <div class="ar-info-row">
-                <span class="ar-label">Reported:</span>
-                <span>${formatTime(fault.timestamp)}</span>
-            </div>
-            ${fault.assigned_to_id ? `
-            <div class="ar-info-row">
-                <span class="ar-label">Assigned to:</span>
-                <span>${userName(fault.assigned_to_id)}</span>
-            </div>` : ''}
-            ${fault.resolved_by_id ? `
-            <div class="ar-info-row">
-                <span class="ar-label">Resolved by:</span>
-                <span>${userName(fault.resolved_by_id)}</span>
-            </div>` : ''}
-            ${fault.description ? `
-            <hr class="ar-divider">
-            <div class="ar-info-row ar-description">
-                <span class="ar-label">Description:</span>
-                <span>${fault.description}</span>
-            </div>` : ''}
-            ${fault.notes ? `
-            <div class="ar-info-row ar-description">
-                <span class="ar-label">Updates:</span>
-                <span>${fault.notes}</span>
-            </div>` : ''}
-        `;
-    }
+    if (panelTitleEl) panelTitleEl.textContent = 'Fault Logged';
+    
+    // Empty the body text
+    if (panelBodyEl) panelBodyEl.innerHTML = '<div style="text-align:center; padding: 10px; color: #94a3b8;">Review fault details in AR view.</div>';
 
     if (actionBtnEl) {
         actionBtnEl.style.display = 'none';
@@ -325,16 +380,13 @@ function renderUnknownPanel(markerId, mode = 'tool') {
     if (panelTitleEl) panelTitleEl.textContent = 'No Record Found';
 
     const hint = mode === 'tool'
-        ? 'If this is a fault location, switch to Fault mode and scan again.'
-        : 'If this is a tool, switch to Tool mode and scan again.';
+        ? 'If this is a fault, switch to Fault mode.'
+        : 'If this is a tool, switch to Tool mode.';
 
     if (panelBodyEl) {
         panelBodyEl.innerHTML = `
-            <div class="ar-info-row" style="color:#f0c040;">
-                No <strong>${mode}</strong> found for marker <strong>${markerId}</strong>.
-            </div>
-            <div class="ar-info-row" style="color:#94a3b8;font-size:0.85rem;margin-top:4px;">
-                ${hint}
+            <div style="text-align:center; color:#f0c040; padding: 10px;">
+                No ${mode} found. <br><span style="font-size: 0.85rem; color:#94a3b8;">${hint}</span>
             </div>
         `;
     }
@@ -372,7 +424,9 @@ async function handleToolScan(tool) {
         if (updated) {
             toolsByMarker[String(updated.marker_id)] = updated;
             activeItem = updated;
-            renderToolPanel(updated);
+            
+            // Force the 3D AR HUD to redraw itself with the new Database values!
+            onMarkerFound(String(updated.marker_id)); 
         }
     } catch (err) {
         console.error('[AR] Scan failed:', err);
@@ -387,6 +441,13 @@ async function handleToolScan(tool) {
 if (homeBtnEl) {
     homeBtnEl.addEventListener('click', () => { window.location.href = '/'; });
 }
+
+
+// FIX FOR AR.JS LANDSCAPE STRETCHING 
+window.addEventListener('orientationchange', () => {
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 500); // Safari fallback
+});
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
