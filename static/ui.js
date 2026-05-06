@@ -176,14 +176,14 @@ export function setupEventListeners() {
             arLaunchButton.disabled = true;
 
             try {
-                // Pre-warm the camera: Ask for permission on the lightweight dashboard
+                // Pre-warm the camera
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                
-                // Permission granted! Immediately stop the stream to free the hardware
+            
                 stream.getTracks().forEach(track => track.stop());
-                
-                // Now redirect to the heavy AR page. No popup will trigger, preventing the crash.
-                window.location.href = '/static/ar.html'; 
+            
+                setTimeout(() => {
+                    window.location.href = '/static/ar.html'; 
+                }, 500);
                 
             } catch (err) {
                 alert("Camera access is required to use the AR Scanner.");
@@ -982,10 +982,18 @@ const openFaultModal = (faultId, faults, users, normalisedRole, userId) => {
     `;
 
     const isSupervisor = ['supervisor', 'admin', 'administrator'].includes(normalisedRole);
+    const notesTitle = fault.status === 'Resolved' ? 'Resolution Notes:' : 'Supervisor Notes:';
 
     // Replace the static notes section with interactive controls for supervisors reviewing a fault
     if (fault.status === 'In-Review' && isSupervisor) {
-        supervisorNotesHtml  = '';
+        let supervisorNotesHtml = `
+        <div style="margin-top: 5px;">
+            <strong style="color:#ffffff;">${notesTitle}</strong>
+            <div style="background: #0f172a; padding: 15px; border-radius: 8px; margin-top: 8px; line-height: 1.6; border: 1px solid #334155;">
+                ${fault.notes || '<span style="color:#cbd5e1;">No notes recorded yet.</span>'}
+            </div>
+        </div>
+    `;
         interactiveActionsHtml = `
             <div style="margin-top: 15px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155;">
                 <h3 style="margin-top: 0; color: #d8b4fe; margin-bottom: 15px;">Actions:</h3>

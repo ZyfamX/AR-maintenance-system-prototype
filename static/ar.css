@@ -12,6 +12,9 @@
    08. BOTTOM NAV BAR
    09. MODE SWITCH (Tool / Fault)
    10. FALLBACK SCREEN
+   11. LANDSCAPE ORIENTATION UI FIXES
+   12. AR FAULT MODAL
+   13. AR CREATE FAULT MODAL
 ========================================================= */
 
 
@@ -445,4 +448,87 @@ body {
     .mode-btn {
         padding: 14px 0; font-size: 1.1rem;
     }
+}
+
+
+
+/* =========================================================
+   12. AR FAULT MODAL
+========================================================= */
+#ar-fault-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10005; /* Sits above everything, including the info panel */
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+#ar-fault-modal.hidden {
+    display: none !important;
+}
+
+.ar-modal-content {
+    background: #1e293b;
+    width: 100%;
+    max-width: 400px;
+    border-radius: 16px;
+    border: 1px solid #475569;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
+}
+
+.ar-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #334155;
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 16px 16px 0 0;
+}
+
+.ar-modal-header h2 { font-size: 1.2rem; color: #f8fafc; }
+
+#ar-modal-close {
+    background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; transition: color 0.2s;
+}
+#ar-modal-close:active { color: #f8fafc; }
+
+#ar-modal-body {
+    padding: 20px; color: #cbd5e1; font-size: 0.95rem; line-height: 1.5; overflow-y: auto;
+}
+
+.ar-modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+.ar-modal-grid div strong { color: #ffffff; display: block; margin-bottom: 4px; }
+
+
+
+/* =========================================================
+   13. AR CREATE FAULT MODAL
+========================================================= */
+#ar-create-fault-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10005; /* Matches the fault viewer modal depth */
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+#ar-create-fault-modal.hidden {
+    display: none !important;
+}
+
+#btn-submit-new-fault:active {
+    background: #2563eb;
+    transform: scale(0.98);
 }
