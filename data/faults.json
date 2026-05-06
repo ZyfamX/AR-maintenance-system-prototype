@@ -299,13 +299,13 @@
         "title": "DEF Tank Level Sensor Fault",
         "description": "DEF tank level sensor on Bus VH-3105 displaying full reading despite tank confirmed empty on physical inspection. Risk of engine derate without accurate level monitoring.",
         "location": "Bay 6, Bus VH-3105, DEF Tank",
-        "status": "In-Progress",
+        "status": "Resolved",
         "priority": "Medium",
         "reported_by_id": 10,
         "timestamp": "2024-10-29T10:45:00",
         "assigned_to_id": 13,
-        "resolved_by_id": null,
-        "notes": "Sensor wiring harness inspected \u2014 connector reseated. Monitoring for recurrence before ordering replacement sensor."
+        "resolved_by_id": 13,
+        "notes": "Sensor wiring harness inspected \u2014 connector reseated. Monitoring for recurrence before ordering replacement sensor.\n\n[Resolution Notes]: I fixed it"
     },
     {
         "id": 23,
