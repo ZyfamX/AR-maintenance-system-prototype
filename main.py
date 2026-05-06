@@ -142,11 +142,35 @@ fault_submission_timestamps = {} # Stores {user_id: datetime}
 perm_lock_threshold = 2
 perm_lock_window_hours = 24
 
+ip_attempts = {}
+
 @app.post("/api/login", response_model=UserOut)
-def login_user(credentials: UserLogin, response: Response):
+def login_user(credentials: UserLogin, response: Response, request: Request):
+
+    now = datetime.now(UTC)
+
+    client_ip = request.client.host
+
+    ip_data = ip_attempts.get(client_ip, {
+        "count": 0,
+        "first": now,
+        "blocked_until": None
+    })
+
+    if ip_data["blocked_until"] and now < ip_data["blocked_until"]:
+        raise HTTPException(status_code=429, detail="Too Many Requests")
+    
+    if now - ip_data["first"] > timedelta(minutes=5):
+        ip_data = {"count": 0, "first": now, "blocked_until": None}
+
+    ip_data["count"] += 1
+
+    if ip_data["count"] >= 20:
+        ip_data["blocked_until"] = now + timedelta(minutes=15)
+
+    ip_attempts[client_ip] = ip_data
 
     users = read_json("users.json")
-    now = datetime.now(UTC)
 
     user_found = False
 
