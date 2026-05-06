@@ -395,10 +395,36 @@ const renderDashboardTables = (visibleFaults, visibleTools, users) => {
         }).join('');
     }
 
-    // --- DASHBOARD TOOLS TABLE ---
+    // --- DASHBOARD TOOLS TABLE (Dynamic based on Role) ---
     const toolsTableBody = document.getElementById('tools-table-body');
-    if (toolsTableBody) {
+    const toolsTableHead = toolsTableBody ? toolsTableBody.previousElementSibling : null; // Grabs the <thead>
+
+    if (toolsTableBody && toolsTableHead) {
+        // Determine role to dynamically shape the table
+        const userData = JSON.parse(localStorage.getItem('ar_user'));
+        const isSupervisor = ['supervisor', 'admin', 'administrator'].includes(userData?.role?.toLowerCase());
+
         let toolsArray = [...visibleTools];
+
+        // Dynamically set the Table Headers based on role
+        if (isSupervisor) {
+            toolsTableHead.innerHTML = `
+                <tr>
+                    <th>TOOL ID</th>
+                    <th>TYPE</th>
+                    <th>LOCATION</th>
+                    <th>STATUS</th>
+                    <th>CURRENT USER</th>
+                </tr>`;
+        } else {
+            // TECHNICIAN HEADERS: Only 3 columns
+            toolsTableHead.innerHTML = `
+                <tr>
+                    <th>TYPE</th>
+                    <th>CHECKOUT TIME</th>
+                    <th>LOCATION</th>
+                </tr>`;
+        }
 
         toolsArray.sort((a, b) => {
             let valA, valB;
@@ -414,19 +440,30 @@ const renderDashboardTables = (visibleFaults, visibleTools, users) => {
             return 0;
         });
 
+        // Render the Rows based on role
         toolsTableBody.innerHTML = toolsArray.map(tool => {
-            const toolBadgeClass  = tool.status === 'Available' ? 'badge-available' : 'badge-out';
-            const currentUserText = tool.current_user_id
-                ? `${getUserFullName(users, tool.current_user_id)} (User ${tool.current_user_id})`
-                : 'In Storage';
-            return `
-                <tr>
-                    <td>${tool.id}</td>
-                    <td>${tool.tool_type}</td>
-                    <td>${tool.storage_location || '<span style="color:#64748b;">Not Assigned</span>'}</td>
-                    <td><span class="badge ${toolBadgeClass}">${tool.status.toUpperCase()}</span></td>
-                    <td>${currentUserText}</td>
-                </tr>`;
+            if (isSupervisor) {
+                // SUPERVISOR ROW (Full Data)
+                const toolBadgeClass  = tool.status === 'Available' ? 'badge-available' : 'badge-out';
+                const currentUserText = tool.current_user_id ? getUserFullName(users, tool.current_user_id) : 'In Storage';
+                return `
+                    <tr>
+                        <td>${tool.id}</td>
+                        <td>${tool.tool_type}</td>
+                        <td>${tool.storage_location || '<span style="color:#64748b;">Not Assigned</span>'}</td>
+                        <td><span class="badge ${toolBadgeClass}">${tool.status.toUpperCase()}</span></td>
+                        <td>${currentUserText}</td>
+                    </tr>`;
+            } else {
+                // TECHNICIAN ROW (Compact Data: Type, Time, Location)
+                const checkoutTimeText = tool.checkout_timestamp ? new Date(tool.checkout_timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+                return `
+                    <tr>
+                        <td style="font-weight: bold;">${tool.tool_type}</td>
+                        <td>${checkoutTimeText}</td>
+                        <td style="font-size: 0.85rem; color: #cbd5e1;">${tool.storage_location || '<span style="color:#64748b;">Not Assigned</span>'}</td>
+                    </tr>`;
+            }
         }).join('');
     }
 };

@@ -1,7 +1,7 @@
 [
     {
         "id": 1,
-        "marker_id": "fault_marker_A",
+        "marker_id": "1",
         "title": "Exposed Wiring Loom",
         "description": "Protective sheathing split on main wiring loom beneath driver's console. Multiple bare conductors visible. Fire risk if left unaddressed.",
         "location": "Bay 3, Bus VH-2041, Under Dashboard",
@@ -15,7 +15,7 @@
     },
     {
         "id": 2,
-        "marker_id": "fault_marker_B",
+        "marker_id": "2",
         "title": "Brake Pad Wear \u2014 Front Axle",
         "description": "Front nearside and offside brake pads worn below 3mm minimum threshold. Brake performance noticeably reduced during inspection test.",
         "location": "Bay 7, Bus VH-1887, Front Axle",
@@ -29,7 +29,7 @@
     },
     {
         "id": 3,
-        "marker_id": "fault_marker_C",
+        "marker_id": "3",
         "title": "Oil Leak \u2014 Gearbox Seal",
         "description": "Steady oil drip from gearbox rear output seal. Pooling on bay floor beneath Bus VH-1654. Estimated loss of 200ml over 8 hours.",
         "location": "Bay 1, Bus VH-1654, Gearbox Underside",
@@ -43,7 +43,7 @@
     },
     {
         "id": 4,
-        "marker_id": "fault_marker_D",
+        "marker_id": "4",
         "title": "Passenger Door Actuator Failure",
         "description": "Rear passenger door failing to fully open on actuation. Door travels approximately 60% of range before stalling. Obstruction or actuator motor fault suspected.",
         "location": "Bay 5, Bus VH-2103, Rear Passenger Door",
@@ -57,7 +57,7 @@
     },
     {
         "id": 5,
-        "marker_id": "fault_marker_E",
+        "marker_id": "5",
         "title": "Cracked Windscreen",
         "description": "Impact crack on driver's side windscreen originating from lower edge. Crack length approximately 280mm and propagating toward centre. Fails visual obstruction check.",
         "location": "Bay 2, Bus VH-1992, Front Windscreen",
@@ -71,7 +71,7 @@
     },
     {
         "id": 6,
-        "marker_id": "fault_marker_F",
+        "marker_id": "6",
         "title": "AdBlue System Warning",
         "description": "Persistent AdBlue system fault code logged on Bus VH-2210. DEF injector pressure reading out of range. Risk of engine derate if unresolved.",
         "location": "Bay 6, Bus VH-2210, Exhaust After-treatment System",
@@ -85,7 +85,7 @@
     },
     {
         "id": 7,
-        "marker_id": "fault_marker_G",
+        "marker_id": "7",
         "title": "Depot Roller Door Obstruction Sensor Fault",
         "description": "Bay 9 roller door obstruction sensor not triggering door reversal during close cycle. Safety-critical fault \u2014 door must not be used until resolved.",
         "location": "Depot Entrance, Bay 9 Roller Door",
@@ -99,7 +99,7 @@
     },
     {
         "id": 8,
-        "marker_id": "fault_marker_H",
+        "marker_id": "8",
         "title": "Tyre Pressure Below Threshold \u2014 Rear Axle",
         "description": "Nearside rear dual tyres on Bus VH-1763 reading 88 PSI against a required 110 PSI. Slow puncture or valve fault suspected.",
         "location": "Bay 4, Bus VH-1763, Rear Nearside Axle",
@@ -113,7 +113,7 @@
     },
     {
         "id": 9,
-        "marker_id": "fault_marker_I",
+        "marker_id": "9",
         "title": "Coolant Temperature Sensor Misread",
         "description": "Engine coolant temperature sensor on Bus VH-2334 intermittently reporting values 40\u00b0C above expected operating range. No physical overheating confirmed \u2014 suspected faulty sensor or loose connector.",
         "location": "Bay 8, Bus VH-2334, Engine Bay",
@@ -127,7 +127,7 @@
     },
     {
         "id": 10,
-        "marker_id": "fault_marker_J",
+        "marker_id": "10",
         "title": "CCTV Camera Blind Spot \u2014 Rear Saloon",
         "description": "Rear saloon CCTV camera on Bus VH-1901 has a partial obstruction covering approximately 30% of its field of view. Cause unclear \u2014 possible internal condensation or physical displacement of unit.",
         "location": "Bay 11, Bus VH-1901, Rear Saloon Ceiling",
@@ -141,7 +141,7 @@
     },
     {
         "id": 11,
-        "marker_id": "fault_marker_K",
+        "marker_id": "11",
         "title": "Suspension Knocking \u2014 Front Offside",
         "description": "Audible knocking from front offside suspension reported by driver of Bus VH-2567 during pre-departure check. Noise present at low speed over uneven surfaces. Worn bush or loose anti-roll bar link suspected.",
         "location": "Bay 2, Bus VH-2567, Front Offside Suspension",
@@ -155,7 +155,7 @@
     },
     {
         "id": 12,
-        "marker_id": "fault_marker_L",
+        "marker_id": "12",
         "title": "Fuel Cap Seal Deterioration",
         "description": "Fuel cap seal on Bus VH-3012 visibly cracked and hardened. Faint fuel odour detected during walkaround inspection. Risk of fuel vapour escape.",
         "location": "Bay 3, Bus VH-3012, Fuel Filler Cap",
@@ -169,7 +169,7 @@
     },
     {
         "id": 13,
-        "marker_id": "fault_marker_M",
+        "marker_id": "13",
         "title": "Handbrake Ineffective \u2014 Stationary Hold",
         "description": "Bus VH-2789 failed stationary hold test on incline during pre-departure check. Handbrake lever travel excessive and vehicle rolled approximately 15cm before stopping.",
         "location": "Bay 10, Bus VH-2789, Handbrake Assembly",
@@ -183,7 +183,7 @@
     },
     {
         "id": 14,
-        "marker_id": "fault_marker_N",
+        "marker_id": "14",
         "title": "Interior Lighting Failure \u2014 Lower Saloon",
         "description": "Four fluorescent strip lights in the lower saloon of Bus VH-1654 not illuminating. Remaining lights unaffected. Possible ballast failure or wiring fault on that circuit.",
         "location": "Bay 1, Bus VH-1654, Lower Saloon Ceiling",
@@ -197,7 +197,7 @@
     },
     {
         "id": 15,
-        "marker_id": "fault_marker_O",
+        "marker_id": "15",
         "title": "Power Steering Fluid Low",
         "description": "Power steering fluid reservoir on Bus VH-3105 reading below minimum marker. No visible external leak identified. Steering feel noticeably heavier than expected at low speed.",
         "location": "Bay 6, Bus VH-3105, Engine Bay",
@@ -211,7 +211,7 @@
     },
     {
         "id": 16,
-        "marker_id": "fault_marker_P",
+        "marker_id": "16",
         "title": "Rear Fog Light Inoperative",
         "description": "Nearside rear fog light on Bus VH-2041 not illuminating when activated. Bulb replacement attempted \u2014 fault persists. Wiring or switch fault suspected.",
         "location": "Bay 3, Bus VH-2041, Rear Light Cluster",
@@ -225,7 +225,7 @@
     },
     {
         "id": 17,
-        "marker_id": "fault_marker_Q",
+        "marker_id": "17",
         "title": "Driver Seat Adjustment Rail Seized",
         "description": "Seat fore-aft adjustment rail on Bus VH-2334 is fully seized. Driver unable to reposition seat. Rail appears corroded. Non-compliant for drivers outside standard height range.",
         "location": "Bay 8, Bus VH-2334, Driver Cab",
@@ -239,7 +239,7 @@
     },
     {
         "id": 18,
-        "marker_id": "fault_marker_R",
+        "marker_id": "18",
         "title": "Windscreen Washer Pump Failure",
         "description": "Windscreen washer pump on Bus VH-1887 not activating when stalk operated. Reservoir confirmed full. No fluid reaching screen \u2014 pump motor suspected failed.",
         "location": "Bay 7, Bus VH-1887, Engine Bay",
@@ -253,7 +253,7 @@
     },
     {
         "id": 19,
-        "marker_id": "fault_marker_S",
+        "marker_id": "19",
         "title": "Battery Voltage Drop \u2014 Auxiliary System",
         "description": "Auxiliary battery on Bus VH-3210 showing resting voltage of 11.4V against expected 12.6V. Destination board and saloon lighting flickering intermittently during idle.",
         "location": "Bay 5, Bus VH-3210, Battery Compartment",
@@ -267,7 +267,7 @@
     },
     {
         "id": 20,
-        "marker_id": "fault_marker_T",
+        "marker_id": "20",
         "title": "Exhaust Mount Bracket Cracked",
         "description": "Rear exhaust mount bracket on Bus VH-2103 has a visible stress fracture. Exhaust section hanging lower than nominal position. Vibration and potential contact with underfloor components if left unaddressed.",
         "location": "Bay 5, Bus VH-2103, Underside Exhaust",
@@ -281,7 +281,7 @@
     },
     {
         "id": 21,
-        "marker_id": "fault_marker_U",
+        "marker_id": "21",
         "title": "Step Well Grab Rail Loose",
         "description": "Front step well grab rail on Bus VH-2567 has two fixing bolts backed out. Rail has approximately 8mm of play. Passenger injury risk \u2014 bus should not carry standing passengers until resolved.",
         "location": "Bay 2, Bus VH-2567, Front Step Well",
@@ -295,7 +295,7 @@
     },
     {
         "id": 22,
-        "marker_id": "fault_marker_V",
+        "marker_id": "22",
         "title": "DEF Tank Level Sensor Fault",
         "description": "DEF tank level sensor on Bus VH-3105 displaying full reading despite tank confirmed empty on physical inspection. Risk of engine derate without accurate level monitoring.",
         "location": "Bay 6, Bus VH-3105, DEF Tank",
@@ -309,7 +309,7 @@
     },
     {
         "id": 23,
-        "marker_id": "fault_marker_W",
+        "marker_id": "23",
         "title": "Bay 4 Compressed Air Line Leak",
         "description": "Audible air leak from compressed air supply line at Bay 4 quick-release coupling. Pressure drop of approximately 8 PSI per minute observed at the manifold gauge.",
         "location": "Bay 4, Compressed Air Supply Line",
