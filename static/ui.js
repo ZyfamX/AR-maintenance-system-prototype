@@ -654,6 +654,8 @@ const renderReviewQueue = (faults, users) => {
  * Renders the "Assign Technicians" view, which shows a card for each technician
  * with their current workload and a list of their active faults.
  */
+const expandedTechIds = new Set();
+
 const renderAssignTechView = (faults, users) => {
     const cardsContainer = document.getElementById('tech-cards-container');
     if (!cardsContainer) return;
@@ -690,15 +692,17 @@ const renderAssignTechView = (faults, users) => {
                     </div>`;
             }).join('');
 
+        const isExpanded = expandedTechIds.has(tech.id);
+
         cardsContainer.innerHTML += `
-            <div class="tech-card">
+            <div class="tech-card ${isExpanded ? 'expanded' : ''}" data-tech-id="${tech.id}">
                 <div class="tech-card-header">
                     <div>
                         <strong style="color: #ffffff; font-size: 1.1rem;">${tech.first_name} ${tech.last_name}</strong>
                     </div>
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <span class="badge ${workloadBadgeClass}">${techActiveFaults.length} Jobs</span>
-                        <span class="expand-icon" style="color: #94a3b8; font-size: 1.2rem; transition: transform 0.2s;">▼</span>
+                        <span class="expand-icon" style="color: #94a3b8; font-size: 1.2rem; transform: ${isExpanded ? 'rotate(180deg)' : 'rotate(0deg)'}; transition: transform 0.2s;">▼</span>
                     </div>
                 </div>
                 <div class="tech-card-body">
@@ -1127,8 +1131,16 @@ const setupSupervisorEvents = (faults, tools, users, normalisedRole, userId) => 
             const cardHeader = e.target.closest('.tech-card-header');
             if (cardHeader) {
                 const techCard = cardHeader.closest('.tech-card');
+                const techId = parseInt(techCard.getAttribute('data-tech-id'));
                 const expandIcon = cardHeader.querySelector('.expand-icon');
                 techCard.classList.toggle('expanded');
+
+                if (techCard.classList.contains('expanded')) {
+                    expandedTechIds.add(techId);
+                } else {
+                    expandedTechIds.delete(techId);
+                }
+
                 expandIcon.style.transform = techCard.classList.contains('expanded') ? 'rotate(180deg)' : 'rotate(0deg)';
                 return;
             }
