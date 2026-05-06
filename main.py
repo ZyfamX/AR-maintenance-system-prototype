@@ -139,11 +139,11 @@ lock_threshold = 5
 lock_duration_minutes = 10
 fault_submission_timestamps = {} # Stores {user_id: datetime}
 
+perm_lock_threshold = 2
+perm_lock_window_hours = 24
+
 @app.post("/api/login", response_model=UserOut)
 def login_user(credentials: UserLogin, response: Response):
-
-    if len(credentials.password) < 8:
-        raise HTTPException(status_code=401, detail="Invalid username or password.")
 
     users = read_json("users.json")
     now = datetime.now(UTC)
@@ -170,6 +170,10 @@ def login_user(credentials: UserLogin, response: Response):
 
                     user["lock_until"] = None
                     user["failed_attempts"] = 0
+
+            if user.get("permanently_locked"):
+                log_system_event(user["id"], "Blocked_login", "Permanent Lock")
+                raise HTTPException(status_code=401, detail="Invalid username or password.")
 
             # Check password
             if verify_password(credentials.password, user["password_hash"]):
@@ -208,10 +212,30 @@ def login_user(credentials: UserLogin, response: Response):
 
             if user["failed_attempts"] >= lock_threshold:
 
+                now = datetime.now(UTC)
+
+                # Temporary lock
                 user["lock_until"] = (now + timedelta(minutes=lock_duration_minutes)).isoformat()
                 user["failed_attempts"] = 0
 
-                log_system_event(user["id"], "Account_Locked", f"Too many failed login attempts.")
+                events = user.get("lock_events", [])
+                events.append(now.isoformat())
+
+                cutoff = now - timedelta(hours=perm_lock_window_hours)
+                events = [
+                    e for e in events
+                    if datetime.fromisoformat(e) > cutoff
+                ]
+
+                user["lock_events"] = events
+
+                if len(events) >= perm_lock_threshold:
+                    user["permanently_locked"] = True
+                    user["lock_until"] = None
+
+                    log_system_event(user["id"], "Account_Permanently_Locked", "Multiple lockouts within time window.")
+                else:
+                    log_system_event(user["id"], "Account_Locked", "Too many failed login attempts.")
 
             else:
                 log_system_event(user["id"], "Unsuccessful_Login", f"Wrong password entered for user {user["username"]}.")
