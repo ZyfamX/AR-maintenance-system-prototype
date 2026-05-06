@@ -64,13 +64,14 @@ class ToolScan(BaseModel):
     marker_id: str = Field(min_length=3, max_length=50)
 
 
-# What the backend sends to the dashboard list (Updated for Fleet Approach)
+# What the backend sends to the dashboard list
 class ToolOut(BaseModel):
     
     id: int
     marker_id: str
     tool_type: str
     status: str
+    storage_location: str
     current_user_id: Optional[int] = None
     checkout_timestamp: Optional[str] = None
 

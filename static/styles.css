@@ -236,7 +236,18 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 /* Header */
-header { grid-area: header; background-color: #0f172a; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; border-bottom: 2px solid #334155; }
+header { 
+    grid-area: header; 
+    background-color: #0f172a; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 0 30px; 
+    border-bottom: 2px solid #334155; 
+    /* FIXED: Prevents clipping and keeps the button on top! */
+    overflow: visible; 
+    z-index: 100; 
+}
 .header-logo { font-size: 1.2rem; font-weight: bold; letter-spacing: 1px; }
 .header-controls { display: flex; gap: 15px; }
 
@@ -441,10 +452,10 @@ td { padding: 12px 10px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
     
     .sidebar { 
         position: fixed; 
-        top: 60px; 
+        top: 90px; 
         left: -250px; 
         width: 250px; 
-        height: calc(100vh - 60px); 
+        height: calc(100vh - 90px); 
         z-index: 2000; 
         transition: left 0.3s ease-in-out; 
         box-shadow: 4px 0 15px rgba(0,0,0,0.5);
