@@ -7,15 +7,26 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from typing import List
 from datetime import datetime, timedelta, UTC
+
 from schemas import FaultCreate, FaultUpdate, ToolScan, UserLogin, UserOut, FaultOut, ToolOut
 from security import verify_password, log_system_event, verify_audit_log, start_security_threads
 from sessions import generate_session, validate_session, update_expiry, remove_session
+from threading import Lock
 
 
 app = FastAPI(title="AR Maintenance System API")
 
 # Starts security-related background threads
 start_security_threads()
+
+# IP Rate Limiting Config
+auth_ip_attempts = {}
+auth_window = timedelta(minutes=1)
+auth_max_requests = 60
+auth_block_duration = timedelta(minutes=5)
+
+ip_lock = Lock()
+auth_ip_lock = Lock()
 
 # Reads data from a JSON file in the data/ directory
 def read_json(filename: str):
@@ -63,15 +74,40 @@ async def auth_middleware(request: Request, call_next):
     if not result["valid"]:
         return JSONResponse(status_code=401, content={"detail": result["error"]})
     
+    client = request.client
+    client_ip = client.host if client else "unknown"
+    now = datetime.now(UTC)
+
     if result["valid"]:
         session_ip = result.get("ip")
-        if session_id and session_ip != request.client.host:
-            log_system_event(result["user_id"], "IP_Mismatch", "Session IP differs to request IP.", request.client.host)
+        if session_id and session_ip != client_ip:
+            log_system_event(result["user_id"], "IP_Mismatch", "Session IP differs to request IP.", client_ip)
             
             # We can make this block requests, but would likely break anyone connecting through a mobile network where their IP might change
             # return JSONResponse(status_code=401, content={"detail": "Session IP mismatch"})
     
     request.state.user_id = result["user_id"]
+
+    with auth_ip_lock:
+        ip_data = auth_ip_attempts.get(client_ip, {
+            "count": 0,
+            "first": now,
+            "blocked_until": None
+        })
+
+        if ip_data["blocked_until"] and now < ip_data["blocked_until"]:
+            log_system_event(request.state.user_id, "Rate_Limited", f"Too many requests from IP {client_ip}", client_ip)
+            return JSONResponse(status_code=429, content={"detail": "Too Many Requests"})
+        
+        if now - ip_data["first"] > auth_window:
+            ip_data = {"count": 0, "first": now, "blocked_until": None}
+
+        ip_data["count"] += 1
+
+        if ip_data["count"] >= auth_max_requests:
+            ip_data["blocked_until"] = now + auth_block_duration
+
+        auth_ip_attempts[client_ip] = ip_data
 
     if request.method in ["POST", "PUT", "PATCH", "DELETE"]:
         csrf_cookie = request.cookies.get("csrf_token")
@@ -156,26 +192,28 @@ ip_attempts = {}
 def login_user(credentials: UserLogin, response: Response, request: Request):
 
     now = datetime.now(UTC)
-    client_ip = request.client.host
+    client = request.client
+    client_ip = client.host if client else "unknown"
 
-    ip_data = ip_attempts.get(client_ip, {
-        "count": 0,
-        "first": now,
-        "blocked_until": None
-    })
+    with ip_lock:
+        ip_data = ip_attempts.get(client_ip, {
+            "count": 0,
+            "first": now,
+            "blocked_until": None
+        })
 
-    if ip_data["blocked_until"] and now < ip_data["blocked_until"]:
-        raise HTTPException(status_code=429, detail="Too Many Requests")
-    
-    if now - ip_data["first"] > timedelta(minutes=5):
-        ip_data = {"count": 0, "first": now, "blocked_until": None}
+        if ip_data["blocked_until"] and now < ip_data["blocked_until"]:
+            raise HTTPException(status_code=429, detail="Too Many Requests")
+        
+        if now - ip_data["first"] > timedelta(minutes=5):
+            ip_data = {"count": 0, "first": now, "blocked_until": None}
 
-    ip_data["count"] += 1
+        ip_data["count"] += 1
 
-    if ip_data["count"] >= 20:
-        ip_data["blocked_until"] = now + timedelta(minutes=15)
+        if ip_data["count"] >= 20:
+            ip_data["blocked_until"] = now + timedelta(minutes=15)
 
-    ip_attempts[client_ip] = ip_data
+        ip_attempts[client_ip] = ip_data
 
     users = read_json("users.json")
 
@@ -243,8 +281,6 @@ def login_user(credentials: UserLogin, response: Response, request: Request):
 
             if user["failed_attempts"] >= lock_threshold:
 
-                now = datetime.now(UTC)
-
                 # Temporary lock
                 user["lock_until"] = (now + timedelta(minutes=lock_duration_minutes)).isoformat()
                 user["failed_attempts"] = 0
@@ -285,7 +321,8 @@ def login_user(credentials: UserLogin, response: Response, request: Request):
 @app.post("/api/logout")
 def logout(request: Request, response: Response, force: bool = False):
 
-    client_ip = request.client.host
+    client = request.client
+    client_ip = client.host if client else "unknown"
     session_id = request.cookies.get("session_id")
 
     if not session_id:
@@ -369,7 +406,8 @@ def get_fault_by_marker(marker_id: str):
 @app.post("/api/faults", response_model=FaultOut, status_code=201)
 def create_new_fault(payload: FaultCreate, request: Request):
     
-    client_ip = request.client.host
+    client = request.client
+    client_ip = client.host if client else "unknown"
     user_id = request.state.user_id
     now = datetime.now(UTC)
 
@@ -392,7 +430,6 @@ def create_new_fault(payload: FaultCreate, request: Request):
             raise HTTPException(
                 status_code=429, # Standard HTTP code for "Too Many Requests"
                 detail=f"Please wait {5 - int(time_since_last)} seconds before submitting another fault.",
-                ip=client_ip
             )
         
             
@@ -439,7 +476,8 @@ def create_new_fault(payload: FaultCreate, request: Request):
 @app.patch("/api/faults/{fault_id}", response_model=FaultOut)
 def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
     
-    client_ip = request.client.host
+    client = request.client
+    client_ip = client.host if client else "unknown"
     faults = read_json("faults.json")
     users = read_json("users.json")
     
@@ -510,7 +548,8 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
 @app.delete("/api/faults/{fault_id}")
 def delete_fault(fault_id: int, request: Request):
     
-    client_ip = request.client.host
+    client = request.client
+    client_ip = client.host if client else "unknown"
     users = read_json("users.json")
     faults = read_json("faults.json")
 
@@ -582,7 +621,8 @@ def get_tool_by_marker(marker_id: str):
 @app.post("/api/tools/scan", response_model=ToolOut)
 def scan_tool_marker(payload: ToolScan, request: Request):
 
-    client_ip = request.client.host
+    client = request.client
+    client_ip = client.host if client else "unknown"
     tools = read_json("tools.json")
     
     for tool in tools:
