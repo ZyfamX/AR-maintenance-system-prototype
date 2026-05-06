@@ -1,4 +1,4 @@
-import { login, logout, getFaults, getTools, getUsers, updateFault } from './api.js';
+import { login, logout, getFaults, getTools, getUsers, updateFault, deleteFault } from './api.js';
 
 
 // ============================================================================
@@ -1027,6 +1027,16 @@ const openFaultModal = (faultId, faults, users, normalisedRole, userId) => {
                 </div>
             </div>
         `;
+    } else if (fault.status !== 'In-Review' && isSupervisor) {
+        interactiveActionsHtml = `
+            <div style="margin-top: 15px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155;">
+                <h3 style="margin-top: 0; color: #d8b4fe; margin-bottom: 15px;">Actions:</h3>
+                <div style="margin-bottom: 15px;">
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button id="modal-btn-delete"  class="btn-solid" data-id="${fault.id}" style="background: #b91c1c; color: #ffffff; width: auto; padding: 8px 20px;">Delete ♻</button>
+                </div>
+            </div>
+        `;
     }
 
     // Populate the modal's main content area
@@ -1116,6 +1126,30 @@ const openFaultModal = (faultId, faults, users, normalisedRole, userId) => {
                 rejectButton.disabled = false;
             }
         };
+    }
+
+    const deleteBtn = document.getElementById('modal-btn-delete');
+    if (deleteBtn) {
+
+        deleteBtn.onclick = async () => {
+            const confirmed = confirm(
+                `Delete fault F-${fault.id}? This action cannot be undone.`
+            );
+            if (!confirmed) return;
+
+            deleteBtn.textContent = '⌛ Deleting...';
+            deleteBtn.disabled = true;
+
+            try {
+                await deleteFault(fault.id);
+                document.getElementById('fault-report-modal').classList.add('hidden');
+                loadDashboardData(normalisedRole, userId);
+            } catch (err) {
+                alert('Failed to delete fault: ' + err.message);
+                deleteBtn.textContent = 'Delete ♻';
+                deleteBtn.disabled = false;
+            }
+        }
     }
 
     faultReportModal.classList.remove('hidden');
