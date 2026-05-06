@@ -162,6 +162,38 @@ export function setupEventListeners() {
         menuToggleButton.addEventListener('click', () => sidebarElement.classList.toggle('open'));
     }
 
+
+    // --- AR CAMERA LAUNCH (CRASH PREVENTION) ---
+    const arLaunchButton = document.getElementById('btn-launch-ar');
+    
+    if (arLaunchButton) {
+        arLaunchButton.addEventListener('click', async (e) => {
+            e.preventDefault();
+            
+            // Change button text to show it's loading
+            const originalText = arLaunchButton.innerHTML;
+            arLaunchButton.innerHTML = 'Loading Camera...';
+            arLaunchButton.disabled = true;
+
+            try {
+                // Pre-warm the camera: Ask for permission on the lightweight dashboard
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                
+                // Permission granted! Immediately stop the stream to free the hardware
+                stream.getTracks().forEach(track => track.stop());
+                
+                // Now redirect to the heavy AR page. No popup will trigger, preventing the crash.
+                window.location.href = '/static/ar.html'; 
+                
+            } catch (err) {
+                alert("Camera access is required to use the AR Scanner.");
+                arLaunchButton.innerHTML = originalText;
+                arLaunchButton.disabled = false;
+            }
+        });
+    }
+
+
     // --- LOGIN FORM ---
     const loginFormElement = document.getElementById('login-form');
     if (loginFormElement) {
