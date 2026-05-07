@@ -11,16 +11,13 @@ If the user is outside the permitted radius, main.py rejects any changes to the 
 The geofence settings are located at the very top of `main.py`. You can adjust these variables to test the system in different locations. To get GPS longitude and latitude coordinates you can just go onto google maps, right click on an area and the coordinates are there to be copied. Here are some 
 
 ### Default Location: Talbot Campus, Bournemouth University
-FACILITY_LAT = 50.743126
-FACILITY_LON = -1.897574
+FACILITY_LAT = 50.743126,  FACILITY_LON = -1.897574
 
 ### Southhamton Location - for testing outside limits (30km away)
-FACILITY_LAT = 50.910464253311936
-FACILITY_LON = -1.4056126022600044
+FACILITY_LAT = 50.910464253311936,  FACILITY_LON = -1.4056126022600044
 
 ### Location In China - For testing really far away functionality (10,000km away)
-FACILITY_LAT = 23.006357146156297
-FACILITY_LON = 113.32488334486924
+FACILITY_LAT = 23.006357146156297,  FACILITY_LON = 113.32488334486924
 
 ### Radius the user must be within to interact with the database. If GPS data is accurate, max distance can be set to 20m and still work consistently.(Tested)
 MAX_DISTANCE_METERS = 8000
