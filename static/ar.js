@@ -260,6 +260,18 @@ async function onMarkerFound(markerId) {
             hudWrapper = document.createElement('a-entity');
             hudWrapper.setAttribute('class', 'ar-hud-wrapper');
 
+            // --- UX FIX: THE AR HIGHLIGHTER ---
+            // A glowing, see-through square that perfectly covers the physical barcode
+            const highlighter = document.createElement('a-plane');
+            highlighter.setAttribute('class', 'hud-highlighter');
+            highlighter.setAttribute('rotation', '-90 0 0'); // Lays it flat on the physical ground
+            highlighter.setAttribute('width', '1.2');  // Slightly larger than the 1x1 marker
+            highlighter.setAttribute('height', '1.2');
+            highlighter.setAttribute('material', 'shader: flat; transparent: true; opacity: 0.4; depthWrite: false;');
+            // Adds a subtle pulsing glow effect
+            highlighter.setAttribute('animation', 'property: material.opacity; from: 0.15; to: 0.45; dir: alternate; loop: true; dur: 800; easing: easeInOutSine;');
+            hudWrapper.appendChild(highlighter);
+
             const line = document.createElement('a-entity');
             line.setAttribute('class', 'hud-line');
             hudWrapper.appendChild(line);
@@ -272,20 +284,37 @@ async function onMarkerFound(markerId) {
             bg.setAttribute('class', 'hud-bg');
             bg.setAttribute('color', '#0f172a');
             bg.setAttribute('width', '3.2');
-            bg.setAttribute('height', '1.4');
+            bg.setAttribute('height', '1.5'); 
             bg.setAttribute('material', 'shader: flat; transparent: true; opacity: 0.85; depthWrite: false;'); 
             hudEl.appendChild(bg);
 
             const accent = document.createElement('a-plane');
             accent.setAttribute('class', 'hud-accent');
             accent.setAttribute('width', '0.05');
-            accent.setAttribute('height', '1.4');
+            accent.setAttribute('height', '1.5');
             accent.setAttribute('material', 'shader: flat; transparent: true; opacity: 1.0; depthWrite: false;');
             hudEl.appendChild(accent);
 
             const title = document.createElement('a-entity');
             title.setAttribute('class', 'hud-title');
             hudEl.appendChild(title);
+
+            // Breaker Lines (Dividers)
+            const div1 = document.createElement('a-plane');
+            div1.setAttribute('class', 'hud-div-1');
+            div1.setAttribute('color', '#334155'); 
+            div1.setAttribute('width', '2.8');
+            div1.setAttribute('height', '0.015');  
+            div1.setAttribute('material', 'shader: flat; depthWrite: false;');
+            hudEl.appendChild(div1);
+
+            const div2 = document.createElement('a-plane');
+            div2.setAttribute('class', 'hud-div-2');
+            div2.setAttribute('color', '#334155');
+            div2.setAttribute('width', '2.8');
+            div2.setAttribute('height', '0.015');
+            div2.setAttribute('material', 'shader: flat; depthWrite: false;');
+            hudEl.appendChild(div2);
 
             // Create Grid Rows
             const lbl1 = document.createElement('a-entity'); lbl1.setAttribute('class', 'hud-lbl-1'); hudEl.appendChild(lbl1);
@@ -316,28 +345,31 @@ async function onMarkerFound(markerId) {
         const centerX = 1.6 * dir;
         const accentX = dir === 1 ? 0.025 : -3.175; 
         
-        const textX = dir === 1 ? 0.15 : -3.05;   
-        const valX = dir === 1 ? 1.40 : -1.80; 
+        const leftEdgeX = dir === 1 ? 0.2 : -3.0; 
+        const valueX = dir === 1 ? 1.3 : -1.9;    
 
-        // 3. Apply calculated positions
+        // 3. Apply calculated positions (FIXED SPACING FOR MULTI-LINE WRAPPING)
         hudWrapper.querySelector('.ar-hud').setAttribute('position', `${offsetX} 1 0`);
-        hudWrapper.querySelector('.hud-bg').setAttribute('position', `${centerX} 0.7 -0.1`);
-        hudWrapper.querySelector('.hud-accent').setAttribute('position', `${accentX} 0.7 0.01`);
-        hudWrapper.querySelector('.hud-title').setAttribute('position', `${textX} 1.1 0.1`);
+        hudWrapper.querySelector('.hud-bg').setAttribute('position', `${centerX} 0.75 -0.1`);
+        hudWrapper.querySelector('.hud-accent').setAttribute('position', `${accentX} 0.75 0.01`);
         
-        hudWrapper.querySelector('.hud-lbl-1').setAttribute('position', `${textX} 0.75 0.1`);
-        hudWrapper.querySelector('.hud-val-1').setAttribute('position', `${valX} 0.75 0.1`);
+        hudWrapper.querySelector('.hud-title').setAttribute('position', `${leftEdgeX} 1.25 0.1`);
         
-        hudWrapper.querySelector('.hud-lbl-2').setAttribute('position', `${textX} 0.45 0.1`);
-        hudWrapper.querySelector('.hud-val-2').setAttribute('position', `${valX} 0.45 0.1`);
+        // Push the bottom divider lower so Row 2 (Location) has room for 2-3 lines of text!
+        hudWrapper.querySelector('.hud-div-1').setAttribute('position', `${centerX} 0.75 0.05`);
+        hudWrapper.querySelector('.hud-div-2').setAttribute('position', `${centerX} 0.25 0.05`);
+
+        hudWrapper.querySelector('.hud-lbl-1').setAttribute('position', `${leftEdgeX} 0.95 0.1`);
+        hudWrapper.querySelector('.hud-val-1').setAttribute('position', `${valueX} 0.95 0.1`);
         
-        hudWrapper.querySelector('.hud-lbl-3').setAttribute('position', `${textX} 0.15 0.1`);
-        hudWrapper.querySelector('.hud-val-3').setAttribute('position', `${valX} 0.15 0.1`);
+        hudWrapper.querySelector('.hud-lbl-2').setAttribute('position', `${leftEdgeX} 0.55 0.1`);
+        hudWrapper.querySelector('.hud-val-2').setAttribute('position', `${valueX} 0.55 0.1`);
+        
+        hudWrapper.querySelector('.hud-lbl-3').setAttribute('position', `${leftEdgeX} 0.10 0.1`);
+        hudWrapper.querySelector('.hud-val-3').setAttribute('position', `${valueX} 0.10 0.1`);
 
         // 4. Populate Live Data with Dashboard Colors
         if (activeItem) {
-            hudWrapper.setAttribute('visible', 'true');
-
             const lineEl = hudWrapper.querySelector('.hud-line');
             const accentEl = hudWrapper.querySelector('.hud-accent');
             const titleEl = hudWrapper.querySelector('.hud-title');
@@ -357,23 +389,19 @@ async function onMarkerFound(markerId) {
                 
                 strL1 = "ID:"; 
                 strV1 = activeItem.id; 
-                colV1 = "#94a3b8";
+                colV1 = "#ffffff";
 
                 strL2 = "LOC:"; 
                 strV2 = activeItem.storage_location || 'N/A'; 
-                colV2 = "#f8fafc";
+                colV2 = "#ffffff";
 
                 strL3 = "STATUS:";   
-                
                 if (activeItem.status === 'Available') {
-                    strV3 = 'AVAILABLE'; 
-                    colV3 = '#4ade80';
+                    strV3 = 'AVAILABLE'; colV3 = '#4ade80';
                 } else if (currentUser && activeItem.current_user_id == currentUser.id) {
-                    strV3 = 'IN USE BY YOU'; 
-                    colV3 = '#3b82f6';
+                    strV3 = 'IN USE BY YOU'; colV3 = '#3b82f6';
                 } else {
-                    strV3 = `IN USE BY ${userName(activeItem.current_user_id).toUpperCase()}`; 
-                    colV3 = '#fb923c';
+                    strV3 = `IN USE BY ${userName(activeItem.current_user_id).toUpperCase()}`; colV3 = '#fb923c';
                 }
 
             } else if (activeType === 'fault') {
@@ -385,26 +413,35 @@ async function onMarkerFound(markerId) {
                 
                 strL1 = "PRIORITY:";    
                 strV1 = activeItem.priority ? activeItem.priority.toUpperCase() : 'N/A'; 
-                colV1 = PRIORITY_COLORS[activeItem.priority] || '#94a3b8';
+                colV1 = PRIORITY_COLORS[activeItem.priority] || '#ffffff';
                 
                 strL2 = "STATUS:";      
                 strV2 = activeItem.status.toUpperCase(); 
-                colV2 = STATUS_COLORS[activeItem.status] || '#94a3b8';
+                colV2 = STATUS_COLORS[activeItem.status] || '#ffffff';
                 
                 strL3 = "REPORTED BY:"; 
                 strV3 = userName(activeItem.reported_by_id).toUpperCase(); 
-                colV3 = "#f8fafc";
+                colV3 = "#ffffff";
             }
 
-            lineEl.setAttribute('line', `start: 0 0 0; end: ${offsetX} 1 0; color: ${mainColor}; opacity: 0.9`);
+            // Thick Tether
+            lineEl.setAttribute('line', `start: 0 0 0; end: ${offsetX} 1 0; color: ${mainColor}; opacity: 0.9; width: 5`);
+            lineEl.setAttribute('line__2', `start: 0 0.03 0; end: ${offsetX} 1.03 0; color: ${mainColor}; opacity: 0.4`); 
+            lineEl.setAttribute('line__3', `start: 0 -0.03 0; end: ${offsetX} 0.97 0; color: ${mainColor}; opacity: 0.4`);
+
             accentEl.setAttribute('color', mainColor);
             titleEl.setAttribute('text', `value: ${titleStr}; color: #ffffff; width: 3.0; align: left; anchor: left; wrapCount: 20; font: roboto;`);
             
-            const fmtText = (val, col) => `value: ${val}; color: ${col}; width: 2.8; align: left; anchor: left; wrapCount: 30; font: roboto;`;
+            // --- UX FIX: HARD CAPPED WIDTH ---
+            // Labels stay wide (2.8) because they are short. 
+            // Values are physically capped at 1.8 width with a wrapCount of 19. 
+            // This forces long locations to drop to a new line without changing font size or breaking out of the box!
+            const fmtLbl = (val) => `value: ${val}; color: #94a3b8; width: 2.8; align: left; anchor: left; wrapCount: 30; font: roboto;`;
+            const fmtVal = (val, col) => `value: ${val}; color: ${col}; width: 1.8; align: left; anchor: left; wrapCount: 19; font: roboto;`;
             
-            lbl1.setAttribute('text', fmtText(strL1, "#cbd5e1")); val1.setAttribute('text', fmtText(strV1, colV1));
-            lbl2.setAttribute('text', fmtText(strL2, "#cbd5e1")); val2.setAttribute('text', fmtText(strV2, colV2));
-            lbl3.setAttribute('text', fmtText(strL3, "#cbd5e1")); val3.setAttribute('text', fmtText(strV3, colV3));
+            lbl1.setAttribute('text', fmtLbl(strL1)); val1.setAttribute('text', fmtVal(strV1, colV1));
+            lbl2.setAttribute('text', fmtLbl(strL2)); val2.setAttribute('text', fmtVal(strV2, colV2));
+            lbl3.setAttribute('text', fmtLbl(strL3)); val3.setAttribute('text', fmtVal(strV3, colV3));
 
         } else {
             hudWrapper.setAttribute('visible', 'false');
@@ -743,8 +780,19 @@ if (homeBtnEl) {
 // AR.js fails to update the 3D canvas aspect ratio immediately on rotation.
 // We force the browser to trigger a "resize" event after the OS finishes turning.
 window.addEventListener('orientationchange', () => {
-    setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
-    setTimeout(() => window.dispatchEvent(new Event('resize')), 500); 
+    [100, 300, 500, 800].forEach(delay => {
+        setTimeout(() => {
+            // 1. Trigger the standard browser resize event
+            window.dispatchEvent(new Event('resize'));
+            
+            // 2. Force the 3D Engine to fix its aspect ratio
+            const scene = document.querySelector('a-scene');
+            if (scene && scene.camera) {
+                scene.camera.aspect = window.innerWidth / window.innerHeight;
+                scene.camera.updateProjectionMatrix();
+            }
+        }, delay);
+    });
 });
 
 // Start the AR application flow

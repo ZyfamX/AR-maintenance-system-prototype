@@ -75,9 +75,9 @@
         "id": 9,
         "marker_id": "9",
         "tool_type": "Impact Wrench",
-        "status": "Available",
-        "current_user_id": null,
-        "checkout_timestamp": null,
+        "status": "Checked-Out",
+        "current_user_id": 10,
+        "checkout_timestamp": "2024-10-29T07:55:00",
         "storage_location": "Workshop Bay A - Cabinet 3"
     },
     {
@@ -192,9 +192,9 @@
         "id": 22,
         "marker_id": "22",
         "tool_type": "Tyre Pressure Gauge",
-        "status": "Available",
-        "current_user_id": null,
-        "checkout_timestamp": null,
+        "status": "Checked-Out",
+        "current_user_id": 14,
+        "checkout_timestamp": "2024-10-29T08:50:00",
         "storage_location": "Tyre Bay - Wall Rack 1"
     },
     {
@@ -210,9 +210,9 @@
         "id": 24,
         "marker_id": "24",
         "tool_type": "Tyre Pressure Gauge",
-        "status": "Available",
-        "current_user_id": null,
-        "checkout_timestamp": null,
+        "status": "Checked-Out",
+        "current_user_id": 15,
+        "checkout_timestamp": "2024-10-29T09:05:00",
         "storage_location": "Tyre Bay - Wall Rack 1"
     },
     {
@@ -228,9 +228,9 @@
         "id": 26,
         "marker_id": "26",
         "tool_type": "Breaker Bar",
-        "status": "Available",
-        "current_user_id": null,
-        "checkout_timestamp": null,
+        "status": "Checked-Out",
+        "current_user_id": 1,
+        "checkout_timestamp": "2024-10-29T06:30:00",
         "storage_location": "Workshop Bay A - Wall Rack 1"
     },
     {
