@@ -28,6 +28,10 @@ class FaultCreate(BaseModel):
     location: str = Field(min_length=3, max_length=100)
     priority: str = Field(pattern="^(Low|Medium|High)$")
 
+    # Added GPS coordinates
+    user_lat: float
+    user_lon: float
+
 
 # What the Supervisor dashboard sends to assign OR resolve a fault
 class FaultUpdate(BaseModel):
@@ -38,6 +42,10 @@ class FaultUpdate(BaseModel):
     resolved_by_id: Optional[int] = None
     notes: Optional[str] = None
 
+
+    # Added GPS coordinates - Only used for Technician 
+    user_lat: Optional[float] = None
+    user_lon: Optional[float] = None
 
 # What the backend sends to the dashboard list
 class FaultOut(BaseModel):
@@ -61,6 +69,10 @@ class FaultOut(BaseModel):
 # What the AR app sends when a tool marker is scanned
 class ToolScan(BaseModel):
     marker_id: str = Field(min_length=1, max_length=50) # Fixed min_length
+
+    # Added GPS coordinates
+    user_lat: float
+    user_lon: float
 
 
 # What the backend sends to the dashboard list
