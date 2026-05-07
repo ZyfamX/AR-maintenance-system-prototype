@@ -1,5 +1,6 @@
 import json
 import os
+import math
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.staticfiles import StaticFiles
@@ -14,7 +15,61 @@ from sessions import generate_session, validate_session, update_expiry, remove_s
 from threading import Lock
 
 
+
+# =================================================================================
+# Change these coordinates to match the location of your physical testing area.
+# You can get exact coordinates by right-clicking any spot on Google Maps
+# =================================================================================
+
+# Southhamton Location - for testing outside limits (30km away)
+#FACILITY_LAT = 50.910464253311936
+#FACILITY_LON = -1.4056126022600044
+
+
+# Location In China - For testing really far away functionality (10,000km away)
+#FACILITY_LAT = 23.006357146156297
+#FACILITY_LON = 113.32488334486924
+
+
+# Default is Talbot Campus, Bournemouth University
+FACILITY_LAT = 50.743126152701805
+FACILITY_LON = -1.8975742409636553 
+
+# Radius user must be in to update faults or check in/out tools, # 8km radius to showcase with flexibility - for real deployment I have tested at 30m and it works well
+MAX_DISTANCE_METERS = 8000 
+# =================================================================================
+
 app = FastAPI(title="AR Maintenance System API")
+
+
+
+# Mathematical function to calculate distance between two GPS coordinates
+def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+
+    R = 6371000 # Earth radius in meters
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+    a = math.sin(delta_phi/2.0)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda/2.0)**2
+
+    return R * (2 * math.atan2(math.sqrt(a), math.sqrt(1-a)))
+
+
+
+# Reusable security check
+def verify_on_site(user_lat: float, user_lon: float):
+
+    if user_lat is None or user_lon is None:
+        raise HTTPException(status_code=403, detail="Location data is required to verify you are on-site.")
+    
+    distance = haversine_distance(user_lat, user_lon, FACILITY_LAT, FACILITY_LON)
+
+    if haversine_distance(user_lat, user_lon, FACILITY_LAT, FACILITY_LON) > MAX_DISTANCE_METERS:
+        raise HTTPException(status_code=403, detail=f"You are {int(distance)}m away from Site Area. You must be within {MAX_DISTANCE_METERS}m.")
+    
+
+
+
 
 # Starts security-related background threads
 start_security_threads()
@@ -416,6 +471,7 @@ def create_new_fault(payload: FaultCreate, request: Request):
     
     client = request.client
     client_ip = client.host if client else "unknown"
+
     user_id = request.state.user_id
     now = datetime.now(UTC)
 
@@ -444,6 +500,11 @@ def create_new_fault(payload: FaultCreate, request: Request):
     # Update the user's last submission time to RIGHT NOW
     fault_submission_timestamps[user_id] = now
     # -----------------------------------------------
+
+
+    # Check the user is on-site
+    verify_on_site(payload.user_lat, payload.user_lon)
+
 
     # Proceed with normal fault creation
     faults = read_json("faults.json")
@@ -503,6 +564,9 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
             
             # RBAC ENFORCEMENT: TECHNICIAN RULES
             if role == "Technician":
+
+                # Check the user is on-site
+                verify_on_site(payload.user_lat, payload.user_lon)
 
                 # Techs cannot assign users to other people
                 if payload.assigned_to_id is not None:
@@ -634,6 +698,10 @@ def scan_tool_marker(payload: ToolScan, request: Request):
 
     client = request.client
     client_ip = client.host if client else "unknown"
+
+    # Check the user is on-site
+    verify_on_site(payload.user_lat, payload.user_lon)
+
     tools = read_json("tools.json")
     
     for tool in tools:

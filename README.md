@@ -1,6 +1,22 @@
 # AR-maintenance-system-prototype
 Designing and developing a prototype AR-based maintenance support system for a public transport context. AR technology can n enhance maintenance operations by enabling authorised personnel to visualise fault locations, overlay contextual information onto physical infrastructure, and collaborate securely in real time
 
+## 🌍 Geofencing & Location Security
+### How it Works
+When a technician attempts to check out a tool, resolve a fault, or log a new fault via the AR interface, the system requests their current GPS coordinates.
+If the user is outside the permitted radius, the main.py rejects any changes to the database
+
+### Configuration
+The geofence settings are located at the very top of `main.py`. You can adjust these variables to test the system in different locations.
+
+# Location of the physical testing area (e.g., Talbot Campus, Bournemouth University)
+FACILITY_LAT = 50.743126
+FACILITY_LON = -1.897574
+
+# Radius the user must be within to interact with the database (in meters)
+MAX_DISTANCE_METERS = 8000
+
+
 ## User logins for testing:
 | Username       | Password   | Role       | Tool IDs Assigned | Fault IDs Assigned |
 | -------------- | ---------- | ---------- | ----------------- | ------------------ |
