@@ -69,7 +69,16 @@ async def auth_middleware(request: Request, call_next):
     if not session_id:
         return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
     
-    result = validate_session(session_id)
+    try:
+        result = validate_session(session_id)
+    except Exception as e:
+        print(f"[AUTH ERROR] {e}")
+        result = {
+            "valid": False,
+            "user_id": None,
+            "csrf_token": None,
+            "error": e
+        }
 
     if not result["valid"]:
         return JSONResponse(status_code=401, content={"detail": result["error"]})
