@@ -4,7 +4,7 @@ Designing and developing a prototype AR-based maintenance support system for a p
 ## User logins for testing:
 | Username       | Password   | Role       | Tool IDs Assigned | Fault IDs Assigned |
 | -------------- | ---------- | ---------- | ----------------- | ------------------ |
-| j.smith_sup    | J@Sm!th1   | Supervisor | 26                | —                  |
+| j.smith_sup    | J@Sm!th1   | Supervisor | —                 | —                  |
 | a.davis_tech   | A@Dav!s2   | Technician | 5, 11, 20         | 10                 |
 | e.carter_sup   | E@Cart!er3 | Supervisor | —                 | —                  |
 | j.walker_sup   | J@Walk!er4 | Supervisor | —                 | —                  |
@@ -18,7 +18,7 @@ Designing and developing a prototype AR-based maintenance support system for a p
 | i.roberts_tech | I@R0berts3 | Technician | 3, 29             | 7                  |
 | t.hughes_tech  | T@Hughes4  | Technician | 27                | 22                 |
 | m.lewis_tech   | M@Lew!s5   | Technician | 13, 22            | 14                 |
-| n.young_tech   | N@Y0ung6   | Technician | 21, 24            | —                  |
+| n.young_tech   | N@Y0ung6   | Technician | 1, 21, 24         | —                  |
 
 
 ### 🛠️ Available Tools (Unassigned)
