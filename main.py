@@ -272,7 +272,7 @@ def login_user(credentials: UserLogin, response: Response, request: Request):
                     max_age=600
                 )
 
-                log_system_event(user["id"], "Successful_Login", f"User {user["username"]} successfully logged in.", client_ip)
+                log_system_event(user["id"], "Successful_Login", f"User {user['username']} successfully logged in.", client_ip)
 
                 return user
             
@@ -305,7 +305,7 @@ def login_user(credentials: UserLogin, response: Response, request: Request):
                     log_system_event(user["id"], "Account_Locked", "Too many failed login attempts.", client_ip)
 
             else:
-                log_system_event(user["id"], "Unsuccessful_Login", f"Wrong password entered for user {user["username"]}.", client_ip)
+                log_system_event(user["id"], "Unsuccessful_Login", f"Wrong password entered for user {user['username']}.", client_ip)
             
             write_json("users.json", users)
 
