@@ -1,4 +1,4 @@
-import { login, logout, getFaults, getTools, getUsers, updateFault } from './api.js';
+import { login, logout, getFaults, getTools, getUsers, updateFault, deleteFault } from './api.js';
 
 
 // ============================================================================
@@ -179,11 +179,12 @@ export function setupEventListeners() {
                 // Pre-warm the camera: Ask for permission on the lightweight dashboard
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 
-                // Permission granted! Immediately stop the stream to free the hardware
                 stream.getTracks().forEach(track => track.stop());
                 
-                // Now redirect to the heavy AR page. No popup will trigger, preventing the crash.
-                window.location.href = '/static/ar.html'; 
+                // Wait 500ms before redirecting so the OS can safely power down the lens
+                setTimeout(() => {
+                    window.location.href = '/static/ar.html'; 
+                }, 500);
                 
             } catch (err) {
                 alert("Camera access is required to use the AR Scanner.");
@@ -982,10 +983,18 @@ const openFaultModal = (faultId, faults, users, normalisedRole, userId) => {
     `;
 
     const isSupervisor = ['supervisor', 'admin', 'administrator'].includes(normalisedRole);
+    const notesTitle = fault.status === 'Resolved' ? 'Resolution Notes:' : 'Supervisor Notes:';
 
     // Replace the static notes section with interactive controls for supervisors reviewing a fault
     if (fault.status === 'In-Review' && isSupervisor) {
-        supervisorNotesHtml  = '';
+        let supervisorNotesHtml = `
+        <div style="margin-top: 5px;">
+            <strong style="color:#ffffff;">${notesTitle}</strong>
+            <div style="background: #0f172a; padding: 15px; border-radius: 8px; margin-top: 8px; line-height: 1.6; border: 1px solid #334155;">
+                ${fault.notes || '<span style="color:#cbd5e1;">No notes recorded yet.</span>'}
+            </div>
+        </div>
+    `;
         interactiveActionsHtml = `
             <div style="margin-top: 15px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155;">
                 <h3 style="margin-top: 0; color: #d8b4fe; margin-bottom: 15px;">Actions:</h3>
@@ -1024,6 +1033,16 @@ const openFaultModal = (faultId, faults, users, normalisedRole, userId) => {
                 <div style="display: flex; gap: 10px; justify-content: flex-end;">
                     <button id="modal-btn-reject"  class="btn-solid" data-id="${fault.id}" style="background: #b91c1c; color: #ffffff; width: auto; padding: 8px 20px;">Reject ✕</button>
                     <button id="modal-btn-approve" class="btn-solid" data-id="${fault.id}" style="background: #15803d; color: #ffffff; width: auto; padding: 8px 20px;">Approve ✓</button>
+                </div>
+            </div>
+        `;
+    } else if (fault.status !== 'In-Review' && isSupervisor) {
+        interactiveActionsHtml = `
+            <div style="margin-top: 15px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155;">
+                <h3 style="margin-top: 0; color: #d8b4fe; margin-bottom: 15px;">Actions:</h3>
+                <div style="margin-bottom: 15px;">
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button id="modal-btn-delete"  class="btn-solid" data-id="${fault.id}" style="background: #b91c1c; color: #ffffff; width: auto; padding: 8px 20px;">Delete ♻</button>
                 </div>
             </div>
         `;
@@ -1116,6 +1135,30 @@ const openFaultModal = (faultId, faults, users, normalisedRole, userId) => {
                 rejectButton.disabled = false;
             }
         };
+    }
+
+    const deleteBtn = document.getElementById('modal-btn-delete');
+    if (deleteBtn) {
+
+        deleteBtn.onclick = async () => {
+            const confirmed = confirm(
+                `Delete fault F-${fault.id}? This action cannot be undone.`
+            );
+            if (!confirmed) return;
+
+            deleteBtn.textContent = '⌛ Deleting...';
+            deleteBtn.disabled = true;
+
+            try {
+                await deleteFault(fault.id);
+                document.getElementById('fault-report-modal').classList.add('hidden');
+                loadDashboardData(normalisedRole, userId);
+            } catch (err) {
+                alert('Failed to delete fault: ' + err.message);
+                deleteBtn.textContent = 'Delete ♻';
+                deleteBtn.disabled = false;
+            }
+        }
     }
 
     faultReportModal.classList.remove('hidden');

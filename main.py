@@ -395,8 +395,7 @@ def get_fault_by_marker(marker_id: str):
 
     for fault in faults:
 
-        # AR needs to show the fault if it's active OR if someone is assigned to fix it
-        if fault["marker_id"] == marker_id and fault["status"] in ["Active", "Assigned"]:
+        if fault["marker_id"] == marker_id and fault["status"] in ["Active", "In-Progress", "In-Review"]:
             return fault
         
     raise HTTPException(status_code=404, detail="No active or assigned fault found for this marker")
@@ -449,10 +448,10 @@ def create_new_fault(payload: FaultCreate, request: Request):
         "title": payload.title,
         "description": payload.description,
         "location": payload.location,
-        "status": "In-Review", # New faults start in "In-Review" status
-        "Priority": None, # Priority is set by Supervisor after review
+        "status": "In-Review", 
+        "priority": payload.priority,
         "reported_by_id": user_id,
-        "timestamp": now.isoformat(),
+        "timestamp": now.isoformat(), 
         "assigned_to_id": None,      
         "resolved_by_id": None,
         "notes": None
@@ -496,22 +495,25 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
             # RBAC ENFORCEMENT: TECHNICIAN RULES
             if role == "Technician":
 
-                # Techs cannot resolve faults or assign users
-                if payload.status == "Resolved" or payload.assigned_to_id is not None:
-                    
-                    # Log the security violation!
+                # Techs cannot assign users to other people
+                if payload.assigned_to_id is not None:
                     log_system_event(
                         user_id=request.state.user_id, 
                         action="UNAUTHORIZED_ACTION", 
-                        details=f"Technician attempted to resolve/assign fault {fault_id}.",
+                        details=f"Technician attempted to assign fault {fault_id}.",
                         ip=client_ip
                     )
-                    raise HTTPException(status_code=403, detail="Technicians cannot assign or resolve faults. Supervisor approval required.")
+                    raise HTTPException(status_code=403, detail="Technicians cannot assign faults.")
                 
-                # Techs CAN update the notes for the supervisor to read
+                # Techs CAN update notes and status
                 if payload.notes is not None:
                     fault["notes"] = payload.notes
-                    fault["status"] = payload.status # e.g., keeping it as "Assigned"
+                if payload.status is not None:
+                    fault["status"] = payload.status 
+
+                # Automatically record the technician as the resolver!
+                if payload.status == "Resolved":
+                    fault["resolved_by_id"] = request.state.user_id
 
             # RBAC ENFORCEMENT: SUPERVISOR RULES
             elif role in ["Supervisor", "Administrator"]:
