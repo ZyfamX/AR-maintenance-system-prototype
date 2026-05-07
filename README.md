@@ -21,8 +21,11 @@ Designing and developing a prototype AR-based maintenance support system for a p
 | n.young_tech   | N@Y0ung6   | Technician | 21, 24            | —                  |
 
 
-Available Tools (Unassigned): 1, 4, 7, 12, 14, 16, 18, 19, 28, 30
+### 🛠️ Available Tools (Unassigned)
+These tools are currently marked as "Available" in the system and are not checked out by any technician:
+* **Marker IDs:** `1`, `4`, `7`, `12`, `14`, `16`, `18`, `19`, `28`, `30`
 
-Unassigned Faults (Pending Action)
-Active (New/Unassigned): Marker IDs 4, 19, 20, 23
-In-Review (Awaiting Supervisor Action): Marker IDs 15, 16, 17, 18
+### ⚠️ Unassigned Faults (Pending Action)
+These faults have been logged in the system but have not yet been assigned to a technician (`assigned_to_id: null`):
+* **Active (New/Unassigned):** Marker IDs `4`, `19`, `20`, `23`
+* **In-Review (Awaiting Supervisor Action):** Marker IDs `15`, `16`, `17`, `18`
