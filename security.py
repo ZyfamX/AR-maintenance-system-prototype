@@ -2,7 +2,7 @@ import bcrypt
 import os
 import json
 import threading
-from threading import Lock
+from filelock import FileLock
 import re
 import time
 from datetime import datetime, UTC
@@ -74,7 +74,7 @@ def get_last_hash(log_file: str) -> str:
         return "0"
 
 # Helper function to record system events for security and auditing purposes
-log_lock = Lock()
+log_lock = FileLock("data/audit.lock")
 
 audit_log_file = os.path.join("data", "audit.log")
 
@@ -205,11 +205,13 @@ def sanitise_for_log(text: str) -> str:
 def audit_verifier_worker(interval_seconds=300):
     while True:
         time.sleep(interval_seconds)
-        verify_audit_log(audit_log_file)
+        result = verify_audit_log(audit_log_file)
+        if not result["valid"]:
+            print(f"[AUDIT WARNING] {result}")
 
 # Starts various security-related background threads
 def start_security_threads():
-    print("Starting security theads")
+    print("Starting security threads")
     # Starts sessions cleanup
     start_cleanup_thread()
 
