@@ -302,7 +302,7 @@
             btnFault.classList.remove('active-fault');
             btnFault.setAttribute('aria-pressed', 'false');
             statusEl.textContent = 'Tool mode — point camera at a marker…';
-            statusEl.style.color = '#f97316';
+            statusEl.style.color = '#3b82f6'; // Bright Blue
             // Close any open panel when switching modes
             document.getElementById('info-panel').classList.remove('visible');
         });
@@ -314,7 +314,7 @@
             btnTool.classList.remove('active-tool');
             btnTool.setAttribute('aria-pressed', 'false');
             statusEl.textContent = 'Fault mode — point camera at a marker…';
-            statusEl.style.color = '#ef4444';
+            statusEl.style.color = '#f97316'; // Bright Orange
             // Close any open panel when switching modes
             document.getElementById('info-panel').classList.remove('visible');
         });

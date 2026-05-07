@@ -343,16 +343,16 @@ body {
     color: rgba(255, 255, 255, 0.45);
 }
 
-/* Tool mode active — orange */
+/* Tool mode active — Blue */
 .mode-btn.active-tool {
-    background: #f97316;
-    color: #fff;
+    background: #3b82f6; /* Bright Blue */
+    color: #0f172a;      /* Dark text for AAA contrast */
 }
 
-/* Fault mode active — red */
+/* Fault mode active — Orange */
 .mode-btn.active-fault {
-    background: #ef4444;
-    color: #fff;
+    background: #f97316; /* Bright Orange */
+    color: #0f172a;      /* Dark text for AAA contrast */
 }
 
 
@@ -412,12 +412,12 @@ body {
     #top-bar {
         position: absolute;
         top: 0; left: 0; right: 0;
+        padding-right: 120px; 
     }
 
     #info-panel {
         left: auto;
-        right: max(20px, env(safe-area-inset-right));
-        /* Push straight down in landscape */
+        right: max(120px, env(safe-area-inset-right));
         transform: translate(0, 150%);
     }
 
@@ -428,27 +428,66 @@ body {
     /* --- NATIVE CAMERA APP THUMB-LOCK --- */
     #bottom-nav {
         position: absolute;
-        /* Positioned above the golden info panel */
-        top: 30%; 
-        /* Locked to the right thumb area, with a 40px buffer so rotation doesn't clip it */
-        right: max(40px, env(safe-area-inset-right)); 
+        top: 0;
+        right: 0;
+        bottom: 0; 
         left: auto;
-        bottom: auto;
-        /* Rotate 90 degrees to match the native camera feel */
-        transform: translateY(-50%) rotate(-90deg);
-        width: max-content;
+        width: 100px; 
+        
+        /* FIX 1: Remove flexbox entirely so elements don't push each other */
+        display: block; 
+        
+        background: rgba(15, 23, 42, 0.85);
+        border-top: none;
+        border-left: 1px solid rgba(71, 85, 105, 0.4);
+        border-radius: 0; 
+        transform: none; 
+        padding: 0;
         margin: 0;
-        padding: 10px 15px;
-        border-radius: 16px;
     }
-
 
     #btn-home {
-        width: 55px; height: 55px; font-size: 1.6rem;
+        /* FIX 2: Lock the home button 30px from the bottom edge */
+        position: absolute;
+        bottom: 30px; 
+        left: 50%;
+        
+        width: 60px; 
+        height: 60px; 
+        font-size: 1.8rem;
+        
+        /* Shift it left by 50% to perfectly center it, then rotate */
+        transform: translateX(-50%) rotate(-90deg);
+        margin: 0;
     }
     
+    #mode-switch {
+        /* FIX 3: Lock the pill to the absolute dead-center of the screen */
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        
+        /* Your preferred wrapping sizes */
+        width: 240px; 
+        height: 80px; 
+        
+        /* Mathematically center the unrotated box, then spin it. 
+           This completely replaces the need for the 150px margin! */
+        transform: translate(-50%, -50%) rotate(-90deg); 
+        
+        display: flex;
+        padding: 5px;
+        box-sizing: border-box;
+        margin: 0; 
+    }
+
     .mode-btn {
-        padding: 14px 0; font-size: 1.1rem;
+        flex: 1;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.1rem; 
     }
 }
 
