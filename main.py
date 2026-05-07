@@ -7,13 +7,26 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from typing import List
 from datetime import datetime, timedelta, UTC
+
 from schemas import FaultCreate, FaultUpdate, ToolScan, UserLogin, UserOut, FaultOut, ToolOut
-from security import verify_password, log_system_event, verify_audit_log
+from security import verify_password, log_system_event, verify_audit_log, start_security_threads
 from sessions import generate_session, validate_session, update_expiry, remove_session
+from threading import Lock
 
 
 app = FastAPI(title="AR Maintenance System API")
 
+# Starts security-related background threads
+start_security_threads()
+
+# IP Rate Limiting Config
+auth_ip_attempts = {}
+auth_window = timedelta(minutes=1)
+auth_max_requests = 60
+auth_block_duration = timedelta(minutes=5)
+
+ip_lock = Lock()
+auth_ip_lock = Lock()
 
 # Reads data from a JSON file in the data/ directory
 def read_json(filename: str):
@@ -61,7 +74,40 @@ async def auth_middleware(request: Request, call_next):
     if not result["valid"]:
         return JSONResponse(status_code=401, content={"detail": result["error"]})
     
+    client = request.client
+    client_ip = client.host if client else "unknown"
+    now = datetime.now(UTC)
+
+    if result["valid"]:
+        session_ip = result.get("ip")
+        if session_id and session_ip != client_ip:
+            log_system_event(result["user_id"], "IP_Mismatch", "Session IP differs to request IP.", client_ip)
+            
+            # We can make this block requests, but would likely break anyone connecting through a mobile network where their IP might change
+            # return JSONResponse(status_code=401, content={"detail": "Session IP mismatch"})
+    
     request.state.user_id = result["user_id"]
+
+    with auth_ip_lock:
+        ip_data = auth_ip_attempts.get(client_ip, {
+            "count": 0,
+            "first": now,
+            "blocked_until": None
+        })
+
+        if ip_data["blocked_until"] and now < ip_data["blocked_until"]:
+            log_system_event(request.state.user_id, "Rate_Limited", f"Too many requests from IP {client_ip}", client_ip)
+            return JSONResponse(status_code=429, content={"detail": "Too Many Requests"})
+        
+        if now - ip_data["first"] > auth_window:
+            ip_data = {"count": 0, "first": now, "blocked_until": None}
+
+        ip_data["count"] += 1
+
+        if ip_data["count"] >= auth_max_requests:
+            ip_data["blocked_until"] = now + auth_block_duration
+
+        auth_ip_attempts[client_ip] = ip_data
 
     if request.method in ["POST", "PUT", "PATCH", "DELETE"]:
         csrf_cookie = request.cookies.get("csrf_token")
@@ -137,14 +183,39 @@ lock_threshold = 5
 lock_duration_minutes = 10
 fault_submission_timestamps = {} # Stores {user_id: datetime}
 
-@app.post("/api/login", response_model=UserOut)
-def login_user(credentials: UserLogin, response: Response):
+perm_lock_threshold = 2
+perm_lock_window_hours = 24
 
-    if len(credentials.password) < 8:
-        raise HTTPException(status_code=401, detail="Invalid username or password.")
+ip_attempts = {}
+
+@app.post("/api/login", response_model=UserOut)
+def login_user(credentials: UserLogin, response: Response, request: Request):
+
+    now = datetime.now(UTC)
+    client = request.client
+    client_ip = client.host if client else "unknown"
+
+    with ip_lock:
+        ip_data = ip_attempts.get(client_ip, {
+            "count": 0,
+            "first": now,
+            "blocked_until": None
+        })
+
+        if ip_data["blocked_until"] and now < ip_data["blocked_until"]:
+            raise HTTPException(status_code=429, detail="Too Many Requests")
+        
+        if now - ip_data["first"] > timedelta(minutes=5):
+            ip_data = {"count": 0, "first": now, "blocked_until": None}
+
+        ip_data["count"] += 1
+
+        if ip_data["count"] >= 20:
+            ip_data["blocked_until"] = now + timedelta(minutes=15)
+
+        ip_attempts[client_ip] = ip_data
 
     users = read_json("users.json")
-    now = datetime.now(UTC)
 
     user_found = False
 
@@ -161,13 +232,17 @@ def login_user(credentials: UserLogin, response: Response):
 
                 if now < lock_time:
 
-                    log_system_event(user["id"], "Blocked_Login", "Attempt to log in to locked account.")
+                    log_system_event(user["id"], "Blocked_Login", "Attempt to log in to locked account.", client_ip)
                     raise HTTPException(status_code=401, detail="Invalid username or password.")
                 
                 else:
 
                     user["lock_until"] = None
                     user["failed_attempts"] = 0
+
+            if user.get("permanently_locked"):
+                log_system_event(user["id"], "Blocked_login", "Permanent Lock", client_ip)
+                raise HTTPException(status_code=401, detail="Invalid username or password.")
 
             # Check password
             if verify_password(credentials.password, user["password_hash"]):
@@ -177,7 +252,7 @@ def login_user(credentials: UserLogin, response: Response):
 
                 write_json("users.json", users)
 
-                session_id, csrf_token = generate_session(user["id"])
+                session_id, csrf_token = generate_session(user["id"], client_ip)
 
                 response.set_cookie(
                     key="session_id",
@@ -197,7 +272,7 @@ def login_user(credentials: UserLogin, response: Response):
                     max_age=600
                 )
 
-                log_system_event(user["id"], "Successful_Login", f"User {user['username']} successfully logged in.")
+                log_system_event(user["id"], "Successful_Login", f"User {user["username"]} successfully logged in.", client_ip)
 
                 return user
             
@@ -206,13 +281,31 @@ def login_user(credentials: UserLogin, response: Response):
 
             if user["failed_attempts"] >= lock_threshold:
 
+                # Temporary lock
                 user["lock_until"] = (now + timedelta(minutes=lock_duration_minutes)).isoformat()
                 user["failed_attempts"] = 0
 
-                log_system_event(user["id"], "Account_Locked", f"Too many failed login attempts.")
+                events = user.get("lock_events", [])
+                events.append(now.isoformat())
+
+                cutoff = now - timedelta(hours=perm_lock_window_hours)
+                events = [
+                    e for e in events
+                    if datetime.fromisoformat(e) > cutoff
+                ]
+
+                user["lock_events"] = events
+
+                if len(events) >= perm_lock_threshold:
+                    user["permanently_locked"] = True
+                    user["lock_until"] = None
+
+                    log_system_event(user["id"], "Account_Permanently_Locked", "Multiple lockouts within time window.", client_ip)
+                else:
+                    log_system_event(user["id"], "Account_Locked", "Too many failed login attempts.", client_ip)
 
             else:
-                log_system_event(user["id"], "Unsuccessful_Login", f"Wrong password entered for user {user['username']}.")
+                log_system_event(user["id"], "Unsuccessful_Login", f"Wrong password entered for user {user["username"]}.", client_ip)
             
             write_json("users.json", users)
 
@@ -220,7 +313,7 @@ def login_user(credentials: UserLogin, response: Response):
 
     # Unknown username or failed login
     if not user_found:
-        log_system_event(None, "Unsuccessful_Login", f"Unknown username: {credentials.username}")
+        log_system_event(None, "Unsuccessful_Login", f"Unknown username: {credentials.username}", client_ip)
         
     raise HTTPException(status_code=401, detail="Invalid username or password.")
 
@@ -228,6 +321,8 @@ def login_user(credentials: UserLogin, response: Response):
 @app.post("/api/logout")
 def logout(request: Request, response: Response, force: bool = False):
 
+    client = request.client
+    client_ip = client.host if client else "unknown"
     session_id = request.cookies.get("session_id")
 
     if not session_id:
@@ -265,7 +360,8 @@ def logout(request: Request, response: Response, force: bool = False):
         log_system_event(
             user_id=user_id, 
             action="SUCCESSFUL_LOGOUT", 
-            details=f"User logged out. Forced: {force}"
+            details=f"User logged out. Forced: {force}",
+            ip=client_ip
         )
 
     return {"message": "Logged out successfully"}
@@ -309,6 +405,8 @@ def get_fault_by_marker(marker_id: str):
 @app.post("/api/faults", response_model=FaultOut, status_code=201)
 def create_new_fault(payload: FaultCreate, request: Request):
     
+    client = request.client
+    client_ip = client.host if client else "unknown"
     user_id = request.state.user_id
     now = datetime.now(UTC)
 
@@ -325,11 +423,12 @@ def create_new_fault(payload: FaultCreate, request: Request):
             log_system_event(
                 user_id=user_id, 
                 action="RATE_LIMIT_EXCEEDED", 
-                details="User attempted to submit multiple faults within 5 seconds."
+                details="User attempted to submit multiple faults within 5 seconds.",
+                ip=client_ip
             )
             raise HTTPException(
                 status_code=429, # Standard HTTP code for "Too Many Requests"
-                detail=f"Please wait {5 - int(time_since_last)} seconds before submitting another fault."
+                detail=f"Please wait {5 - int(time_since_last)} seconds before submitting another fault.",
             )
         
             
@@ -365,7 +464,8 @@ def create_new_fault(payload: FaultCreate, request: Request):
     log_system_event(
         user_id=user_id, 
         action="FAULT_REPORTED", 
-        details=f"New fault logged at {payload.location}: {payload.title}"
+        details=f"New fault logged at {payload.location}: {payload.title}",
+        ip=client_ip
     )
 
     return new_fault
@@ -375,6 +475,8 @@ def create_new_fault(payload: FaultCreate, request: Request):
 @app.patch("/api/faults/{fault_id}", response_model=FaultOut)
 def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
     
+    client = request.client
+    client_ip = client.host if client else "unknown"
     faults = read_json("faults.json")
     users = read_json("users.json")
     
@@ -398,7 +500,8 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
                     log_system_event(
                         user_id=request.state.user_id, 
                         action="UNAUTHORIZED_ACTION", 
-                        details=f"Technician attempted to assign fault {fault_id}."
+                        details=f"Technician attempted to assign fault {fault_id}.",
+                        ip=client_ip
                     )
                     raise HTTPException(status_code=403, detail="Technicians cannot assign faults.")
                 
@@ -432,7 +535,8 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
             log_system_event(
                 user_id=request.state.user_id, 
                 action=f"FAULT_UPDATED", 
-                details=f"Fault {fault_id} updated by {role}."
+                details=f"Fault {fault_id} updated by {role}.",
+                ip=client_ip
             )
 
             return fault
@@ -446,6 +550,8 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
 @app.delete("/api/faults/{fault_id}")
 def delete_fault(fault_id: int, request: Request):
     
+    client = request.client
+    client_ip = client.host if client else "unknown"
     users = read_json("users.json")
     faults = read_json("faults.json")
 
@@ -464,7 +570,8 @@ def delete_fault(fault_id: int, request: Request):
         log_system_event(
             user_id=request.state.user_id, 
             action="UNAUTHORIZED_DELETE_ATTEMPT", 
-            details=f"Technician attempted to delete fault {fault_id}."
+            details=f"Technician attempted to delete fault {fault_id}.",
+            ip=client_ip
         )
         raise HTTPException(status_code=403, detail="Only Supervisors can delete faults.")
 
@@ -489,7 +596,8 @@ def delete_fault(fault_id: int, request: Request):
     log_system_event(
         user_id=request.state.user_id, 
         action="FAULT_DELETED", 
-        details=f"Fault {fault_id} ('{fault_to_delete['title']}') deleted by {role}."
+        details=f"Fault {fault_id} ('{fault_to_delete['title']}') deleted by {role}.",
+        ip=client_ip
     )
 
     return {"message": f"Fault {fault_id} successfully deleted."}
@@ -514,6 +622,9 @@ def get_tool_by_marker(marker_id: str):
 # Handles the AR tool checkout/check-in logic automatically based on the current status
 @app.post("/api/tools/scan", response_model=ToolOut)
 def scan_tool_marker(payload: ToolScan, request: Request):
+
+    client = request.client
+    client_ip = client.host if client else "unknown"
     tools = read_json("tools.json")
     
     for tool in tools:
@@ -529,7 +640,8 @@ def scan_tool_marker(payload: ToolScan, request: Request):
                 log_system_event(
                     user_id=request.state.user_id, 
                     action="TOOL_CHECKOUT", 
-                    details=f"Tool {tool['id']} checked out successfully."
+                    details=f"Tool {tool['id']} checked out successfully.",
+                    ip=client_ip
                 )
 
             # Tool is checked out by THIS user: Check it back in
@@ -543,7 +655,8 @@ def scan_tool_marker(payload: ToolScan, request: Request):
                 log_system_event(
                     user_id=request.state.user_id, 
                     action="TOOL_CHECKIN", 
-                    details=f"Tool {tool['id']} checked back in."
+                    details=f"Tool {tool['id']} checked back in.",
+                    ip=client_ip
                 )
                 
             # Tool is checked out by SOMEONE ELSE: No Access
