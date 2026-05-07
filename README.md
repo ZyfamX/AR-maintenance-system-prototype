@@ -3,17 +3,25 @@ Designing and developing a prototype AR-based maintenance support system for a p
 
 ## 🌍 Geofencing & Location Security
 ### How it Works
-When a technician attempts to check out a tool, resolve a fault, or log a new fault via the AR interface, the system requests their current GPS coordinates.
-If the user is outside the permitted radius, the main.py rejects any changes to the database
+When a technician attempts to check in/out a tool, resolve a fault, or log a new fault via the AR interface, the system requests their current GPS coordinates.
+If the user is outside the permitted radius, main.py rejects any changes to the database.
 
 ### Configuration
-The geofence settings are located at the very top of `main.py`. You can adjust these variables to test the system in different locations.
+The geofence settings are located at the very top of `main.py`. You can adjust these variables to test the system in different locations. To get GPS longitude and latitude coordinates you can just go onto google maps, right click on an area and the coordinates are there to be copied. Here are some 
 
-# Location of the physical testing area (e.g., Talbot Campus, Bournemouth University)
+# Default Location: Talbot Campus, Bournemouth University
 FACILITY_LAT = 50.743126
 FACILITY_LON = -1.897574
 
-# Radius the user must be within to interact with the database (in meters)
+# Southhamton Location - for testing outside limits (30km away)
+#FACILITY_LAT = 50.910464253311936
+#FACILITY_LON = -1.4056126022600044
+
+# Location In China - For testing really far away functionality (10,000km away)
+#FACILITY_LAT = 23.006357146156297
+#FACILITY_LON = 113.32488334486924
+
+# Radius the user must be within to interact with the database. If GPS data is accurate, max distance can be set to 20m and still work consistently.(Tested)
 MAX_DISTANCE_METERS = 8000
 
 
