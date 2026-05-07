@@ -197,7 +197,7 @@ def login_user(credentials: UserLogin, response: Response):
                     max_age=600
                 )
 
-                log_system_event(user["id"], "Successful_Login", f"User {user["username"]} successfully logged in.")
+                log_system_event(user["id"], "Successful_Login", f"User {user['username']} successfully logged in.")
 
                 return user
             
@@ -212,7 +212,7 @@ def login_user(credentials: UserLogin, response: Response):
                 log_system_event(user["id"], "Account_Locked", f"Too many failed login attempts.")
 
             else:
-                log_system_event(user["id"], "Unsuccessful_Login", f"Wrong password entered for user {user["username"]}.")
+                log_system_event(user["id"], "Unsuccessful_Login", f"Wrong password entered for user {user['username']}.")
             
             write_json("users.json", users)
 
