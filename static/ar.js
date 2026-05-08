@@ -712,7 +712,7 @@ function openARFaultModal(fault) {
     let resolutionHtml = '';
     const isMine = currentUser && fault.assigned_to_id == currentUser.id;
     
-    if (fault.status !== 'Resolved' && isMine) {
+    if (['Active', 'In-Progress'].includes(fault.status) && isMine) {
         resolutionHtml = `
             <div style="margin-top: 20px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #3b82f6;">
                 <strong style="color: #60a5fa;">Resolve Fault</strong>
@@ -772,12 +772,10 @@ function openARFaultModal(fault) {
                 
                 resolveBtn.textContent = 'Processing...';
 
-                const combinedNotes = fault.notes 
-                    ? `${fault.notes}\n\n[Resolution Notes]: ${newNotes}` 
-                    : `[Resolution Notes]: ${newNotes}`;
+                const combinedNotes = fault.notes ? `${fault.notes}\n\n[Resolution Notes]: ${newNotes}` : `[Resolution Notes]: ${newNotes}`;
 
                 await updateFault(fault.id, {
-                    status: 'Resolved',
+                    status: 'In-Review',
                     notes: combinedNotes,
                     user_lat: loc.lat, // Add GPS
                     user_lon: loc.lon
@@ -785,7 +783,7 @@ function openARFaultModal(fault) {
 
                 modal.classList.add('hidden');
                 
-                showToast("Fault resolved successfully!", 'success');
+                showToast("Fault Resolution submitted successfully!", 'success');
 
                 const markerEl = document.getElementById(`barcode-${fault.marker_id}`);
                 if (markerEl) {
@@ -798,7 +796,7 @@ function openARFaultModal(fault) {
                 activeType = null;
                 
                 if (statusEl) {
-                    statusEl.textContent = 'Fault resolved. Point camera at a new marker.';
+                    statusEl.textContent = 'Fault resolution submitted. Point camera at a new marker.';
                     statusEl.style.color = '#7ef7a0';
                 }
 

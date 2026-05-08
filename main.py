@@ -94,11 +94,9 @@ def read_json(filename: str):
         return json.load(file)
 
 def write_json(filename: str, data: list):
-
     filepath = os.path.join("data", filename)
-    
     with open(filepath, "w", encoding="utf-8") as file:
-        json.dump(data, file, indent=4)
+        json.dump(data, file, indent=2)
 
 
 # Middleware for session authentication
@@ -597,14 +595,22 @@ def update_fault(fault_id: int, payload: FaultUpdate, request: Request):
             # RBAC ENFORCEMENT: SUPERVISOR RULES
             elif role in ["Supervisor", "Administrator"]:
 
+                supplied_fields = payload.dict(exclude_unset=True)
+
+                # Status is required in the schema, so we can always safely update it
                 fault["status"] = payload.status
-                fault["priority"] = payload.priority
                 
-                if payload.assigned_to_id is not None:
+                # Check if fields were explicitly sent. If they were sent (even as null), update them
+                if "priority" in supplied_fields:
+                    fault["priority"] = payload.priority
+                    
+                if "assigned_to_id" in supplied_fields:
                     fault["assigned_to_id"] = payload.assigned_to_id
-                if payload.resolved_by_id is not None:
+                    
+                if "resolved_by_id" in supplied_fields:
                     fault["resolved_by_id"] = payload.resolved_by_id
-                if payload.notes is not None:
+                    
+                if "notes" in supplied_fields:
                     fault["notes"] = payload.notes
 
             # Save to database

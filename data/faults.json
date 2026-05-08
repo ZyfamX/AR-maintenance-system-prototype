@@ -5,18 +5,18 @@
     "title": "Exposed Wiring Loom",
     "description": "Protective sheathing split on main wiring loom beneath driver's console. Multiple bare conductors visible. Fire risk if left unaddressed.",
     "location": "Bay 3, Bus VH-2041, Under Dashboard",
-    "status": "In-Progress",
+    "status": "In-Review",
     "priority": "High",
     "reported_by_id": 2,
     "timestamp": "2024-10-24T09:15:00",
     "assigned_to_id": 11,
     "resolved_by_id": null,
-    "notes": null
+    "notes": "[Resolution Notes]: I have placed a temporary warning tag on the dashboard to alert drivers and technicians of the hazard. Please advise on scheduling this repair as soon as possible to mitigate the risk."
   },
   {
     "id": 2,
     "marker_id": "2",
-    "title": "Brake Pad Wear — Front Axle",
+    "title": "Brake Pad Wear \u2014 Front Axle",
     "description": "Front nearside and offside brake pads worn below 3mm minimum threshold. Brake performance noticeably reduced during inspection test.",
     "location": "Bay 7, Bus VH-1887, Front Axle",
     "status": "In-Progress",
@@ -30,7 +30,7 @@
   {
     "id": 3,
     "marker_id": "3",
-    "title": "Oil Leak — Gearbox Seal",
+    "title": "Oil Leak \u2014 Gearbox Seal",
     "description": "Steady oil drip from gearbox rear output seal. Pooling on bay floor beneath Bus VH-1654. Estimated loss of 200ml over 8 hours.",
     "location": "Bay 1, Bus VH-1654, Gearbox Underside",
     "status": "In-Progress",
@@ -87,7 +87,7 @@
     "id": 7,
     "marker_id": "7",
     "title": "Depot Roller Door Obstruction Sensor Fault",
-    "description": "Bay 9 roller door obstruction sensor not triggering door reversal during close cycle. Safety-critical fault — door must not be used until resolved.",
+    "description": "Bay 9 roller door obstruction sensor not triggering door reversal during close cycle. Safety-critical fault \u2014 door must not be used until resolved.",
     "location": "Depot Entrance, Bay 9 Roller Door",
     "status": "In-Progress",
     "priority": "High",
@@ -100,7 +100,7 @@
   {
     "id": 8,
     "marker_id": "8",
-    "title": "Tyre Pressure Below Threshold — Rear Axle",
+    "title": "Tyre Pressure Below Threshold \u2014 Rear Axle",
     "description": "Nearside rear dual tyres on Bus VH-1763 reading 88 PSI against a required 110 PSI. Slow puncture or valve fault suspected.",
     "location": "Bay 4, Bus VH-1763, Rear Nearside Axle",
     "status": "Resolved",
@@ -115,7 +115,7 @@
     "id": 9,
     "marker_id": "9",
     "title": "Coolant Temperature Sensor Misread",
-    "description": "Engine coolant temperature sensor on Bus VH-2334 intermittently reporting values 40°C above expected operating range. No physical overheating confirmed — suspected faulty sensor or loose connector.",
+    "description": "Engine coolant temperature sensor on Bus VH-2334 intermittently reporting values 40\u00b0C above expected operating range. No physical overheating confirmed \u2014 suspected faulty sensor or loose connector.",
     "location": "Bay 8, Bus VH-2334, Engine Bay",
     "status": "In-Progress",
     "priority": "Medium",
@@ -128,8 +128,8 @@
   {
     "id": 10,
     "marker_id": "10",
-    "title": "CCTV Camera Blind Spot — Rear Saloon",
-    "description": "Rear saloon CCTV camera on Bus VH-1901 has a partial obstruction covering approximately 30% of its field of view. Cause unclear — possible internal condensation or physical displacement of unit.",
+    "title": "CCTV Camera Blind Spot \u2014 Rear Saloon",
+    "description": "Rear saloon CCTV camera on Bus VH-1901 has a partial obstruction covering approximately 30% of its field of view. Cause unclear \u2014 possible internal condensation or physical displacement of unit.",
     "location": "Bay 11, Bus VH-1901, Rear Saloon Ceiling",
     "status": "In-Progress",
     "priority": "Low",
@@ -142,7 +142,7 @@
   {
     "id": 11,
     "marker_id": "11",
-    "title": "Suspension Knocking — Front Offside",
+    "title": "Suspension Knocking \u2014 Front Offside",
     "description": "Audible knocking from front offside suspension reported by driver of Bus VH-2567 during pre-departure check. Noise present at low speed over uneven surfaces. Worn bush or loose anti-roll bar link suspected.",
     "location": "Bay 2, Bus VH-2567, Front Offside Suspension",
     "status": "In-Progress",
@@ -151,7 +151,7 @@
     "timestamp": "2024-10-28T13:30:00",
     "assigned_to_id": 5,
     "resolved_by_id": null,
-    "notes": "Vehicle held from service. Physical inspection underway — ramp lift booked for 14:00 today."
+    "notes": "Vehicle held from service. Physical inspection underway \u2014 ramp lift booked for 14:00 today."
   },
   {
     "id": 12,
@@ -170,7 +170,7 @@
   {
     "id": 13,
     "marker_id": "13",
-    "title": "Handbrake Ineffective — Stationary Hold",
+    "title": "Handbrake Ineffective \u2014 Stationary Hold",
     "description": "Bus VH-2789 failed stationary hold test on incline during pre-departure check. Handbrake lever travel excessive and vehicle rolled approximately 15cm before stopping.",
     "location": "Bay 10, Bus VH-2789, Handbrake Assembly",
     "status": "In-Progress",
@@ -184,7 +184,7 @@
   {
     "id": 14,
     "marker_id": "14",
-    "title": "Interior Lighting Failure — Lower Saloon",
+    "title": "Interior Lighting Failure \u2014 Lower Saloon",
     "description": "Four fluorescent strip lights in the lower saloon of Bus VH-1654 not illuminating. Remaining lights unaffected. Possible ballast failure or wiring fault on that circuit.",
     "location": "Bay 1, Bus VH-1654, Lower Saloon Ceiling",
     "status": "In-Progress",
@@ -213,7 +213,7 @@
     "id": 16,
     "marker_id": "16",
     "title": "Rear Fog Light Inoperative",
-    "description": "Nearside rear fog light on Bus VH-2041 not illuminating when activated. Bulb replacement attempted — fault persists. Wiring or switch fault suspected.",
+    "description": "Nearside rear fog light on Bus VH-2041 not illuminating when activated. Bulb replacement attempted \u2014 fault persists. Wiring or switch fault suspected.",
     "location": "Bay 3, Bus VH-2041, Rear Light Cluster",
     "status": "In-Review",
     "priority": "Low",
@@ -241,20 +241,20 @@
     "id": 18,
     "marker_id": "18",
     "title": "Windscreen Washer Pump Failure",
-    "description": "Windscreen washer pump on Bus VH-1887 not activating when stalk operated. Reservoir confirmed full. No fluid reaching screen — pump motor suspected failed.",
+    "description": "Windscreen washer pump on Bus VH-1887 not activating when stalk operated. Reservoir confirmed full. No fluid reaching screen \u2014 pump motor suspected failed.",
     "location": "Bay 7, Bus VH-1887, Engine Bay",
-    "status": "In-Review",
-    "priority": "Low",
+    "status": "In-Progress",
+    "priority": "High",
     "reported_by_id": 9,
     "timestamp": "2024-10-29T08:30:00",
-    "assigned_to_id": null,
+    "assigned_to_id": 8,
     "resolved_by_id": null,
     "notes": null
   },
   {
     "id": 19,
     "marker_id": "19",
-    "title": "Battery Voltage Drop — Auxiliary System",
+    "title": "Battery Voltage Drop \u2014 Auxiliary System",
     "description": "Auxiliary battery on Bus VH-3210 showing resting voltage of 11.4V against expected 12.6V. Destination board and saloon lighting flickering intermittently during idle.",
     "location": "Bay 5, Bus VH-3210, Battery Compartment",
     "status": "Active",
@@ -283,7 +283,7 @@
     "id": 21,
     "marker_id": "21",
     "title": "Step Well Grab Rail Loose",
-    "description": "Front step well grab rail on Bus VH-2567 has two fixing bolts backed out. Rail has approximately 8mm of play. Passenger injury risk — bus should not carry standing passengers until resolved.",
+    "description": "Front step well grab rail on Bus VH-2567 has two fixing bolts backed out. Rail has approximately 8mm of play. Passenger injury risk \u2014 bus should not carry standing passengers until resolved.",
     "location": "Bay 2, Bus VH-2567, Front Step Well",
     "status": "In-Progress",
     "priority": "High",
@@ -305,7 +305,7 @@
     "timestamp": "2024-10-29T10:45:00",
     "assigned_to_id": 13,
     "resolved_by_id": 13,
-    "notes": "Sensor wiring harness inspected — connector reseated. Monitoring for recurrence before ordering replacement sensor.\n\n[Resolution Notes]: I fixed it"
+    "notes": "Sensor wiring harness inspected \u2014 connector reseated. Monitoring for recurrence before ordering replacement sensor.\n\n[Resolution Notes]: I fixed it"
   },
   {
     "id": 23,
