@@ -93,6 +93,32 @@ function formatTime(iso) {
 }
 
 
+/**
+ * Creates a beautiful sliding Toast notification on the screen.
+ * @param {string} message - The text to display
+ * @param {string} type - 'success' or 'error'
+ */
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `ar-toast toast-${type}`;
+    
+    // Add an icon based on the type
+    const icon = type === 'success' ? '✅' : '🚫';
+    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+
+    container.appendChild(toast);
+
+    // Automatically remove it after 4 seconds
+    setTimeout(() => {
+        toast.classList.add('fade-out');
+        toast.addEventListener('animationend', () => toast.remove());
+    }, 4000);
+}
+
+
 // ============================================================================
 // CAMERA & FALLBACK INITIALIZATION
 // ============================================================================
@@ -255,17 +281,16 @@ async function onMarkerFound(markerId) {
 
         let hudWrapper = markerEl.querySelector('.ar-hud-wrapper');
         
-        // 1. Build the Grid Layout ONCE
+        // Build the Grid Layout ONCE
         if (!hudWrapper) {
             hudWrapper = document.createElement('a-entity');
             hudWrapper.setAttribute('class', 'ar-hud-wrapper');
 
-            // --- UX FIX: THE AR HIGHLIGHTER ---
-            // A glowing, see-through square that perfectly covers the physical barcode
+            // A glowing, see-through square that covers the physical barcode
             const highlighter = document.createElement('a-plane');
             highlighter.setAttribute('class', 'hud-highlighter');
-            highlighter.setAttribute('rotation', '-90 0 0'); // Lays it flat on the physical ground
-            highlighter.setAttribute('width', '1.2');  // Slightly larger than the 1x1 marker
+            highlighter.setAttribute('rotation', '-90 0 0'); 
+            highlighter.setAttribute('width', '2.4');  
             highlighter.setAttribute('height', '1.2');
             highlighter.setAttribute('material', 'shader: flat; transparent: true; opacity: 0.4; depthWrite: false;');
             // Adds a subtle pulsing glow effect
@@ -330,7 +355,7 @@ async function onMarkerFound(markerId) {
             markerEl.appendChild(hudWrapper);
         }
 
-        // 2. DYNAMIC MATH: Project HUD away from the nearest screen edge
+        // DYNAMIC MATH: Project HUD away from the nearest screen edge
         let dir = 1; 
         const cameraEl = document.querySelector('[camera]');
         if (cameraEl && cameraEl.components.camera) {
@@ -348,14 +373,13 @@ async function onMarkerFound(markerId) {
         const leftEdgeX = dir === 1 ? 0.2 : -3.0; 
         const valueX = dir === 1 ? 1.3 : -1.9;    
 
-        // 3. Apply calculated positions (FIXED SPACING FOR MULTI-LINE WRAPPING)
+        // Apply calculated positions (FIXED SPACING FOR MULTI-LINE WRAPPING)
         hudWrapper.querySelector('.ar-hud').setAttribute('position', `${offsetX} 1 0`);
         hudWrapper.querySelector('.hud-bg').setAttribute('position', `${centerX} 0.75 -0.1`);
         hudWrapper.querySelector('.hud-accent').setAttribute('position', `${accentX} 0.75 0.01`);
         
         hudWrapper.querySelector('.hud-title').setAttribute('position', `${leftEdgeX} 1.25 0.1`);
         
-        // Push the bottom divider lower so Row 2 (Location) has room for 2-3 lines of text!
         hudWrapper.querySelector('.hud-div-1').setAttribute('position', `${centerX} 0.75 0.05`);
         hudWrapper.querySelector('.hud-div-2').setAttribute('position', `${centerX} 0.25 0.05`);
 
@@ -368,7 +392,7 @@ async function onMarkerFound(markerId) {
         hudWrapper.querySelector('.hud-lbl-3').setAttribute('position', `${leftEdgeX} 0.10 0.1`);
         hudWrapper.querySelector('.hud-val-3').setAttribute('position', `${valueX} 0.10 0.1`);
 
-        // 4. Populate Live Data with Dashboard Colors
+        // Populate Live Data with Dashboard Colors
         if (activeItem) {
             const lineEl = hudWrapper.querySelector('.hud-line');
             const accentEl = hudWrapper.querySelector('.hud-accent');
@@ -571,6 +595,7 @@ function renderUnknownPanel(markerId, mode = 'tool') {
  * Disables the UI while processing and triggers a 3D re-render on success.
  */
 async function handleToolScan(tool) {
+
     if (!currentUser) {
         alert('You must be logged in to check out or return tools.');
         return;
@@ -582,16 +607,30 @@ async function handleToolScan(tool) {
     }
 
     try {
-        const updated = await scanTool({ marker_id: tool.marker_id });
+        actionBtnEl.textContent = 'Locating GPS...'; // Tell the user what's happening
+        const loc = await getUserLocation();
+        
+        actionBtnEl.textContent = 'Processing...';
+        const updated = await scanTool({ marker_id: tool.marker_id, user_lat: loc.lat, user_lon: loc.lon });
 
         if (updated) {
             toolsByMarker[String(updated.marker_id)] = updated;
             activeItem = updated;
-            onMarkerFound(String(updated.marker_id)); 
+            
+            // --- TOAST NOTIFICATIONS ---
+            const isCheckingOut = tool.status === 'Available';
+            if (isCheckingOut) {
+                showToast(`${updated.tool_type} successfully checked-in to inventory.`, 'success');
+            } else {
+                showToast(`${updated.tool_type} successfully checked-out from inventory.`, 'success');
+            }
+
+            onMarkerFound(String(updated.marker_id));
         }
     } catch (err) {
         console.error('[AR] Scan failed:', err);
-        alert(`Action failed: ${err.message}`);
+        showToast(err.message, 'error');
+
         if (actionBtnEl) actionBtnEl.disabled = false;
         renderToolPanel(tool);
     }
@@ -671,18 +710,27 @@ function openARFaultModal(fault) {
             resolveBtn.disabled = true;
 
             try {
+
+                // Get GPS location
+                resolveBtn.textContent = 'Locating GPS...';
+                const loc = await getUserLocation();
+                
+                resolveBtn.textContent = 'Processing...';
+
                 const combinedNotes = fault.notes 
                     ? `${fault.notes}\n\n[Resolution Notes]: ${newNotes}` 
                     : `[Resolution Notes]: ${newNotes}`;
 
                 await updateFault(fault.id, {
                     status: 'Resolved',
-                    notes: combinedNotes
+                    notes: combinedNotes,
+                    user_lat: loc.lat, // Add GPS
+                    user_lon: loc.lon
                 });
 
                 modal.classList.add('hidden');
                 
-                alert("Fault resolved successfully!");
+                showToast("Fault resolved successfully!", 'success');
 
                 const markerEl = document.getElementById(`barcode-${fault.marker_id}`);
                 if (markerEl) {
@@ -701,8 +749,9 @@ function openARFaultModal(fault) {
 
                 loadData(); 
 
+
             } catch (err) {
-                alert("Failed to resolve fault: " + err.message);
+                showToast(err.message, 'error');
                 resolveBtn.textContent = 'Mark as Resolved';
                 resolveBtn.disabled = false;
             }
@@ -741,28 +790,55 @@ function openCreateFaultModal(markerId) {
         submitBtn.textContent = 'Submitting...';
         
         try {
+            // Get GPS location
+            submitBtn.textContent = 'Locating GPS...';
+            const loc = await getUserLocation();
+            
+            submitBtn.textContent = 'Submitting...';
+
             const payload = {
                 marker_id: markerId,
                 title: document.getElementById('create-title').value,
                 priority: document.getElementById('create-priority').value,
                 location: document.getElementById('create-location').value,
-                description: document.getElementById('create-description').value
+                description: document.getElementById('create-description').value,
+                user_lat: loc.lat, // Add GPS
+                user_lon: loc.lon
             };
             
             await createFault(payload);
             
             modal.classList.add('hidden');
+
+            showToast(`Success! Fault logged to Marker #${markerId}.`, 'success');
             
             alert(`Success! Fault logged to Marker #${markerId} and sent for review.`);
             hideInfoPanel();
             loadData();
             
         } catch (err) {
-            alert("Failed to create fault: " + err.message);
+            showToast(err.message, 'error');
             submitBtn.disabled = false;
             submitBtn.textContent = 'Submit Report';
         }
     };
+}
+
+
+/**
+ * Prompts the browser/device for the user's current GPS location.
+ */
+function getUserLocation() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error("Geolocation is not supported by your browser."));
+        } else {
+            navigator.geolocation.getCurrentPosition(
+                (position) => resolve({ lat: position.coords.latitude, lon: position.coords.longitude }),
+                (error) => reject(new Error("Location permission denied. You must allow GPS access to prove you are on-site."))
+            );
+        }
+    });
 }
 
 
@@ -782,10 +858,10 @@ if (homeBtnEl) {
 window.addEventListener('orientationchange', () => {
     [100, 300, 500, 800].forEach(delay => {
         setTimeout(() => {
-            // 1. Trigger the standard browser resize event
+            // Trigger the standard browser resize event
             window.dispatchEvent(new Event('resize'));
             
-            // 2. Force the 3D Engine to fix its aspect ratio
+            // Force the 3D Engine to fix its aspect ratio
             const scene = document.querySelector('a-scene');
             if (scene && scene.camera) {
                 scene.camera.aspect = window.innerWidth / window.innerHeight;

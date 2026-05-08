@@ -15,6 +15,7 @@
    11. LANDSCAPE ORIENTATION UI FIXES
    12. AR FAULT MODAL
    13. AR CREATE FAULT MODAL
+   14. Toast Notifications
 ========================================================= */
 
 
@@ -412,12 +413,15 @@ body {
     #top-bar {
         position: absolute;
         top: 0; left: 0; right: 0;
-        padding-right: 120px; 
+        padding-right: 120px; /* Keep text from sliding under the thumb bar */
     }
 
     #info-panel {
         left: auto;
-        right: max(120px, env(safe-area-inset-right));
+        right: max(120px, env(safe-area-inset-right)); 
+        
+        bottom: 24px; 
+        
         transform: translate(0, 150%);
     }
 
@@ -432,51 +436,48 @@ body {
         right: 0;
         bottom: 0; 
         left: auto;
-        width: 100px; 
+        width: 100px; /* Fixed width vertical side-panel */
+        height: 100%;
         
-        /* FIX 1: Remove flexbox entirely so elements don't push each other */
+        /* Remove flexbox entirely so elements don't push each other */
         display: block; 
         
         background: rgba(15, 23, 42, 0.85);
         border-top: none;
         border-left: 1px solid rgba(71, 85, 105, 0.4);
         border-radius: 0; 
-        transform: none; 
+        
+        transform: none; /* CRITICAL: Do NOT rotate the container! */
         padding: 0;
         margin: 0;
     }
 
     #btn-home {
-        /* FIX 2: Lock the home button 30px from the bottom edge */
+        /* Pin to the bottom right corner */
         position: absolute;
         bottom: 30px; 
         left: 50%;
+        width: 52px; 
+        height: 52px; 
+        font-size: 1.6rem;
         
-        width: 60px; 
-        height: 60px; 
-        font-size: 1.8rem;
-        
-        /* Shift it left by 50% to perfectly center it, then rotate */
+        /* Center horizontally, then rotate text to face the screen edge */
         transform: translateX(-50%) rotate(-90deg);
         margin: 0;
     }
     
     #mode-switch {
-        /* FIX 3: Lock the pill to the absolute dead-center of the screen */
         position: absolute;
-        top: 50%;
+        top: calc(50% - 45px); 
         left: 50%;
         
-        /* Your preferred wrapping sizes */
         width: 240px; 
-        height: 80px; 
+        height: 52px; 
         
-        /* Mathematically center the unrotated box, then spin it. 
-           This completely replaces the need for the 150px margin! */
         transform: translate(-50%, -50%) rotate(-90deg); 
         
         display: flex;
-        padding: 5px;
+        padding: 4px;
         box-sizing: border-box;
         margin: 0; 
     }
@@ -488,6 +489,7 @@ body {
         justify-content: center;
         align-items: center;
         font-size: 1.1rem; 
+        border-radius: 9px;
     }
 }
 
@@ -585,4 +587,64 @@ body {
 #btn-submit-new-fault:active {
     background: #2563eb;
     transform: scale(0.98);
+}
+
+
+/* =========================================================
+   14. TOAST NOTIFICATIONS
+========================================================= */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10006; /* Above absolutely everything */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none; /* Let clicks pass through to the AR scene */
+    width: 90%;
+    max-width: 400px;
+}
+
+.ar-toast {
+    padding: 15px 20px;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.4;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transform: translateY(-20px);
+    animation: toastEnter 0.4s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Success - Green */
+.ar-toast.toast-success {
+    background: rgba(34, 197, 94, 0.95);
+    backdrop-filter: blur(8px);
+    border: 1px solid #16a34a;
+}
+
+/* Error/Warning - Red */
+.ar-toast.toast-error {
+    background: rgba(239, 68, 68, 0.95);
+    backdrop-filter: blur(8px);
+    border: 1px solid #dc2626;
+}
+
+.ar-toast.fade-out {
+    animation: toastExit 0.3s forwards;
+}
+
+@keyframes toastEnter {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toastExit {
+    to { opacity: 0; transform: translateY(-20px); }
 }
