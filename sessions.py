@@ -72,6 +72,7 @@ def validate_session(provided_id: str) -> dict:
         "valid": bool,
         "user_id": str | None,
         "csrf_token": str| None,
+        "ip": str | None,
         "error": str | None
     }
     """
@@ -82,20 +83,21 @@ def validate_session(provided_id: str) -> dict:
         session_data = sessions.get(provided_id)
 
         if not session_data:
-            return {"valid": False, "user_id": None, "csrf_token": None, "error": "Session not found"}
+            return {"valid": False, "user_id": None, "csrf_token": None, "ip": None, "error": "Session not found"}
         
         try:
             expiry = datetime.fromisoformat(session_data["expires_at"])
         except Exception:
-            return {"valid": False, "user_id": None, "csrf_token": None, "error": "Invalid session expiry"}
+            return {"valid": False, "user_id": None, "csrf_token": None, "ip": None, "error": "Invalid session expiry"}
 
         if datetime.now(UTC) > expiry:
             user_id = session_data["user_id"]
+            ip = session_data["ip"]
             del sessions[provided_id]
             save_sessions_unlocked(sessions)
-            return {"valid": False, "user_id": user_id, "csrf_token": None, "error": "Session expired"}
+            return {"valid": False, "user_id": user_id, "csrf_token": None, ip: None, "error": "Session expired"}
         
-        return {"valid": True, "user_id": session_data["user_id"], "csrf_token": session_data.get("csrf_token"), "error": None}
+        return {"valid": True, "user_id": session_data["user_id"], "csrf_token": session_data.get("csrf_token"), "ip": session_data.get("ip"), "error": None}
     
 def update_expiry(session_id: str):
     now = datetime.now(UTC)

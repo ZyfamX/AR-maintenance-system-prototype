@@ -132,6 +132,7 @@ async def auth_middleware(request: Request, call_next):
             "valid": False,
             "user_id": None,
             "csrf_token": None,
+            "ip": None,
             "error": e
         }
 
@@ -145,7 +146,7 @@ async def auth_middleware(request: Request, call_next):
     if result["valid"]:
         session_ip = result.get("ip")
         if session_id and session_ip != client_ip:
-            log_system_event(result["user_id"], "IP_Mismatch", "Session IP differs to request IP.", client_ip)
+            log_system_event(result["user_id"], "IP_Mismatch", f"Session IP differs to request IP. Session IP ${session_ip}, request IP ${client_ip}", client_ip)
             
             # We can make this block requests, but would likely break anyone connecting through a mobile network where their IP might change
             # return JSONResponse(status_code=401, content={"detail": "Session IP mismatch"})
