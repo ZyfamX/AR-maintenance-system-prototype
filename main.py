@@ -137,7 +137,8 @@ async def auth_middleware(request: Request, call_next):
 
 
     # Update expiry so it only expires after 10 minutes of inactivity
-    update_expiry(session_id)
+    if request.url.path != "/api/check-session":
+        update_expiry(session_id)
 
     return await call_next(request)
 
@@ -147,6 +148,10 @@ async def auth_middleware(request: Request, call_next):
 def health_check():
     return {"status": "ok", "message": "Server is running"}
 
+# simple authourised route to check if current session is valid
+@app.get("/api/check-session")
+def check_session(request: Request):
+    return {"valid": True, "user_id": request.state.user_id}
 
 # Returns active faults, filtered securely by Role
 @app.get("/api/faults", response_model=List[FaultOut])

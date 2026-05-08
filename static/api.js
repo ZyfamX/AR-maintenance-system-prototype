@@ -34,7 +34,9 @@ async function request(method, path, body = null) {
 
     if (!response.ok) {
         const error = await response.json().catch(() => ({ detail: "Unknown error" }));
-        throw new Error(error.detail || `Request failed with status ${response.status}`);
+        const errObj = new Error(error.detail || `Request failed with status ${response.status}`);
+        errObj.status = response.status;
+        throw errObj
     }
 
     // 204 No Content or empty body — return null
@@ -65,6 +67,20 @@ export async function getUsers() {
     return request("GET", "/users");
 }
 
+// SESSION CHECK
+// =====================================================================
+// GET /api/check-session - returns 200 if valid, 401 if expired
+export async function checkSession() {
+    try {
+        await request("GET", "/check-session");
+        return true;
+    } catch (err) {
+        if (err.status === 401) {
+            return false;
+        }
+        throw err;
+    }
+}
 
 // FAULTS
 // =====================================================================
