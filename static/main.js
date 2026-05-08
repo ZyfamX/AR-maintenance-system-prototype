@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error("Session check failed:", err)
             }
         }
-    }, 10000);
+    }, 60000);
     
     console.log("AR Maintenance System Initialized.");
 });
