@@ -14,10 +14,10 @@ document.addEventListener('DOMContentLoaded', () => {
         alert("Session expired! Please log in again.");
     }
 
-    const dashboard = document.getElementById("dashboard-view")
+    const login = document.getElementById("login-view")
 
     setInterval(async () => {
-        if (dashboard && !dashboard.classList.contains("hidden")) {
+        if (login === null || login?.classList.contains("hidden")) {
             try {
                 const active = await checkSession();
                 if (!active) {
@@ -38,10 +38,10 @@ document.addEventListener("visibilitychange", async () => {
         return;
     }
 
-    const dashboard = document.getElementById("dashboard")
-    const dashboardVisible = dashboard && !dashboard.classList.contains("hidden")
+    const login = document.getElementById("login-view")
+    const loginVisible = login === null || login.classList.contains("hidden")
 
-    if (!dashboardVisible) {
+    if (!loginVisible) {
         return;
     }
 
