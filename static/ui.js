@@ -651,7 +651,7 @@ const renderAllFaults = (faults, users) => {
 
 /**
  * Renders the review queue — faults submitted by technicians that are
- * awaiting supervisor approval or rejection.
+ * either new or awaiting supervisor to set to resolve or active or rejection.
  */
 const renderReviewQueue = (faults, users) => {
     const tableBody = document.getElementById('review-faults-table-body');
@@ -670,20 +670,36 @@ const renderReviewQueue = (faults, users) => {
             case 'priority': valA = a.priority || 'zzz'; valB = b.priority || 'zzz'; break;
             default: valA = a.id; valB = b.id;
         }
-
         if (valA < valB) return reviewQueueState.sortAsc ? -1 : 1;
         if (valA > valB) return reviewQueueState.sortAsc ?  1 : -1;
         return 0;
     });
 
     if (pendingReviewFaults.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 30px; color: #94a3b8;">No faults pending review. Great job! 🎉</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: #94a3b8;">No faults pending review. Great job! 🎉</td></tr>';
         return;
     }
 
     tableBody.innerHTML = pendingReviewFaults.map(f => {
         const reportedTimeText = formatTime(f.timestamp);
         const priorityBadgeClass = f.priority?.toUpperCase() === 'HIGH' ? 'badge-high': f.priority?.toUpperCase() === 'MEDIUM' ? 'badge-medium': 'badge-low';
+        
+        // LOGIC SPLIT: Is this a tech resolution or a new report?
+        const isResolution = !!f.assigned_to_id;
+        const resolvedText = isResolution ? '<span class="badge badge-review">Yes (Pending)</span>' : '<span class="badge badge-active">No (New)</span>';
+
+        let actionHtml = `<div style="display: flex; gap: 5px;">
+            <button class="btn-solid btn-view-modal" data-id="${f.id}" style="padding: 6px 15px; font-weight: bold; background: #1d4ed8; color: #ffffff; min-width: auto; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); border: none;" title="View Full Report">View</button>`;
+
+        if (isResolution) {
+            actionHtml += `
+                <button class="btn-solid btn-approve-fault" data-id="${f.id}" style="padding: 6px 10px; background: #15803d; color: #ffffff; min-width: auto; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); border: none;" title="Approve Resolution">✓</button>`;
+        } else {
+            actionHtml += `
+                <button class="btn-solid btn-approve-fault" data-id="${f.id}" style="padding: 6px 10px; background: #15803d; color: #ffffff; min-width: auto; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); border: none;" title="Approve ">✓</button>`;
+        }
+
+        actionHtml += `<button class="btn-solid btn-delete-fault" data-id="${f.id}" style="padding: 6px 10px; background: #b91c1c; color: #ffffff; min-width: auto; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); border: none;" title="Delete Permanently">🗑️</button></div>`;
 
         return `
             <tr>
@@ -693,31 +709,8 @@ const renderReviewQueue = (faults, users) => {
                 <td>${getUserFullName(users, f.reported_by_id)}</td>
                 <td>${reportedTimeText}</td>
                 <td><span class="badge ${priorityBadgeClass}">${f.priority ? f.priority.toUpperCase() : 'N/A'}</span></td>
-                <td>
-                    <select class="select-priority" style="width: 100%; height: 36px; box-sizing: border-box; padding: 6px; background: #0f172a; color: #f8fafc; border: 1px solid #64748b; border-radius: 4px;">
-                        <option value="" disabled selected>-- Select --</option>
-                        <option value="High">High</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Low">Low</option>
-                    </select>
-                </td>
-                <td>
-                    <button
-                        class="btn-outline btn-open-tech-modal"
-                        data-tech-id=""
-                        style="width: 100%; height: 36px; box-sizing: border-box; padding: 6px; background: #0f172a; color: #e2e8f0; border: 1px solid #64748b; border-radius: 4px; text-align: left; display: flex; justify-content: space-between; align-items: center;"
-                    >
-                        <span class="tech-name-display">-- Unassigned --</span>
-                        <span>🔍</span>
-                    </button>
-                </td>
-                <td>
-                    <div style="display: flex; gap: 5px;">
-                        <button class="btn-solid btn-view-modal"    data-id="${f.id}" style="padding: 6px 10px; background: #1d4ed8; color: #ffffff; min-width: auto;" title="View Full Report">👁️</button>
-                        <button class="btn-solid btn-approve-fault" data-id="${f.id}" style="padding: 6px 10px; background: #15803d; color: #ffffff; min-width: auto;" title="Quick Approve">✓</button>
-                        <button class="btn-solid btn-reject-fault"  data-id="${f.id}" style="padding: 6px 10px; background: #b91c1c; color: #ffffff; min-width: auto;" title="Quick Reject">✕</button>
-                    </div>
-                </td>
+                <td>${resolvedText}</td>
+                <td>${actionHtml}</td>
             </tr>`;
     }).join('');
 };
@@ -984,68 +977,65 @@ const openFaultModal = (faultId, faults, users, normalisedRole, userId) => {
 
     const isSupervisor = ['supervisor', 'admin', 'administrator'].includes(normalisedRole);
     const notesTitle = fault.status === 'Resolved' ? 'Resolution Notes:' : 'Supervisor Notes:';
+    const isResolution = !!fault.assigned_to_id;
 
-    // Replace the static notes section with interactive controls for supervisors reviewing a fault
     if (fault.status === 'In-Review' && isSupervisor) {
-        let supervisorNotesHtml = `
+        supervisorNotesHtml = `
         <div style="margin-top: 5px;">
             <strong style="color:#ffffff;">${notesTitle}</strong>
             <div style="background: #0f172a; padding: 15px; border-radius: 8px; margin-top: 8px; line-height: 1.6; border: 1px solid #334155;">
                 ${fault.notes || '<span style="color:#cbd5e1;">No notes recorded yet.</span>'}
             </div>
-        </div>
-    `;
-        interactiveActionsHtml = `
-            <div style="margin-top: 15px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155;">
-                <h3 style="margin-top: 0; color: #d8b4fe; margin-bottom: 15px;">Actions:</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                    <div>
-                        <strong style="color:#ffffff; font-size: 0.9rem;">Set Priority:</strong>
-                        <select id="modal-select-priority" style="width: 100%; height: 40px; box-sizing: border-box; padding: 8px; background: #1e293b; color: #f8fafc; border: 1px solid #64748b; border-radius: 4px; margin-top: 5px;">
-                            <option value="" disabled selected>-- Select Priority --</option>
-                            <option value="High">High</option>
-                            <option value="Medium">Medium</option>
-                            <option value="Low">Low</option>
-                        </select>
+        </div>`;
+
+        if (isResolution) {
+            interactiveActionsHtml = `
+                <div style="margin-top: 15px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155;">
+                    <h3 style="margin-top: 0; color: #d8b4fe; margin-bottom: 10px;">Review Resolution:</h3>
+                    <p style="color:#cbd5e1; margin-top:0; font-size: 0.9rem;">Technician marked this fault as resolved. Approve it to close the fault, or reject it to return it to Active status.</p>
+                    <div style="margin-bottom: 15px;">
+                        <strong style="color:#ffffff; font-size: 0.9rem;">Feedback (Required if rejecting):</strong>
+                        <textarea id="modal-input-notes" rows="3" placeholder="Enter feedback for the technician..." style="width: 100%; padding: 8px; background: #1e293b; color: #f8fafc; border: 1px solid #64748b; border-radius: 4px; margin-top: 5px; font-family: inherit; resize: vertical; box-sizing: border-box;"></textarea>
                     </div>
-                    <div>
-                        <strong style="color:#ffffff; font-size: 0.9rem;">Assign Tech:</strong>
-                        <button
-                            id="modal-btn-open-tech"
-                            class="btn-outline btn-open-tech-modal"
-                            data-tech-id=""
-                            style="width: 100%; height: 40px; box-sizing: border-box; padding: 8px; background: #1e293b; color: #e2e8f0; border: 1px solid #64748b; border-radius: 4px; margin-top: 5px; text-align: left; display: flex; justify-content: space-between; align-items: center;"
-                        >
-                            <span class="tech-name-display">-- Unassigned --</span>
-                            <span>🔍</span>
-                        </button>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button id="modal-btn-delete" class="btn-solid" data-id="${fault.id}" style="background: #b91c1c; color: #ffffff; width: auto; padding: 8px 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); border: none;">Delete 🗑️</button>
+                        <button id="modal-btn-reject" class="btn-solid" data-id="${fault.id}" style="background: #f59e0b; color: #0f172a; font-weight: bold; width: auto; padding: 8px 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); border: none;">Reject & Return ↩️</button>
+                        <button id="modal-btn-approve-res" class="btn-solid" data-id="${fault.id}" style="background: #15803d; color: #ffffff; width: auto; padding: 8px 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); border: none;">Approve Resolution ✓</button>
                     </div>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <strong style="color:#ffffff; font-size: 0.9rem;">Add Note (Required for rejection):</strong>
-                    <textarea
-                        id="modal-input-notes"
-                        rows="3"
-                        placeholder="Enter instructions or rejection reasons here..."
-                        style="width: 100%; padding: 8px; background: #1e293b; color: #f8fafc; border: 1px solid #64748b; border-radius: 4px; margin-top: 5px; font-family: inherit; resize: vertical; box-sizing: border-box;"
-                    ></textarea>
-                </div>
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button id="modal-btn-reject"  class="btn-solid" data-id="${fault.id}" style="background: #b91c1c; color: #ffffff; width: auto; padding: 8px 20px;">Reject ✕</button>
-                    <button id="modal-btn-approve" class="btn-solid" data-id="${fault.id}" style="background: #15803d; color: #ffffff; width: auto; padding: 8px 20px;">Approve ✓</button>
-                </div>
-            </div>
-        `;
-    } else if (fault.status !== 'In-Review' && isSupervisor) {
+                </div>`;
+        } else {
+            interactiveActionsHtml = `
+                <div style="margin-top: 15px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155;">
+                    <h3 style="margin-top: 0; color: #d8b4fe; margin-bottom: 10px;">Review New Report:</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <strong style="color:#ffffff; font-size: 0.9rem;">Set Priority:</strong>
+                            <select id="modal-select-priority" style="width: 100%; height: 40px; box-sizing: border-box; padding: 8px; background: #1e293b; color: #f8fafc; border: 1px solid #64748b; border-radius: 4px; margin-top: 5px;">
+                                <option value="${fault.priority || 'Medium'}" selected>${fault.priority || 'Medium'} (Rec.)</option>
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                        </div>
+                        <div>
+                            <strong style="color:#ffffff; font-size: 0.9rem;">Assign Tech:</strong>
+                            <button id="modal-btn-open-tech" class="btn-outline btn-open-tech-modal" data-tech-id="" style="width: 100%; height: 40px; box-sizing: border-box; padding: 8px; background: #1e293b; color: #e2e8f0; border: 1px solid #64748b; border-radius: 4px; margin-top: 5px; text-align: left; display: flex; justify-content: space-between; align-items: center;">
+                                <span class="tech-name-display">-- Unassigned --</span><span>🔍</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button id="modal-btn-delete" class="btn-solid" data-id="${fault.id}" style="background: #b91c1c; color: #ffffff; width: auto; padding: 8px 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); border: none;">Delete 🗑️</button>
+                        <button id="modal-btn-resolve-direct" class="btn-solid" data-id="${fault.id}" style="background: #6d28d9; color: #ffffff; width: auto; padding: 8px 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); border: none;">Resolve Directly</button>
+                        <button id="modal-btn-approve-new" class="btn-solid" data-id="${fault.id}" style="background: #15803d; color: #ffffff; width: auto; padding: 8px 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); border: none;">Approve ✓</button>
+                    </div>
+                </div>`;
+        }
+    } else if (isSupervisor) {
         interactiveActionsHtml = `
-            <div style="margin-top: 15px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155;">
-                <h3 style="margin-top: 0; color: #d8b4fe; margin-bottom: 15px;">Actions:</h3>
-                <div style="margin-bottom: 15px;">
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button id="modal-btn-delete"  class="btn-solid" data-id="${fault.id}" style="background: #b91c1c; color: #ffffff; width: auto; padding: 8px 20px;">Delete ♻</button>
-                </div>
-            </div>
-        `;
+            <div style="margin-top: 15px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; text-align: right;">
+                <button id="modal-btn-delete" class="btn-solid" data-id="${fault.id}" style="background: #b91c1c; color: #ffffff; width: auto; padding: 8px 20px;">Delete Permanently 🗑️</button>
+            </div>`;
     }
 
     // Populate the modal's main content area
@@ -1071,98 +1061,128 @@ const openFaultModal = (faultId, faults, users, normalisedRole, userId) => {
         ${interactiveActionsHtml}
     `;
 
-    const faultReportModal = document.getElementById('fault-report-modal');
+    // ==========================================
+    // MODAL BUTTON CLICK HANDLERS
+    // ==========================================
 
-    // Wire up the Approve button if it was rendered
-    const approveButton = document.getElementById('modal-btn-approve');
-    if (approveButton) {
-        approveButton.onclick = async () => {
-            const selectedPriority = document.getElementById('modal-select-priority').value;
-            const selectedTechId = document.getElementById('modal-btn-open-tech').getAttribute('data-tech-id');
-            const enteredNotes = document.getElementById('modal-input-notes').value;
-
-            if (!selectedPriority) return showToast("Please select a Priority level before approving this fault.", "error");
-
-            approveButton.textContent = "⏳";
-            approveButton.disabled    = true;
-
-            try {
-                const updatePayload = {
-                    status: selectedTechId ? 'In-Progress' : 'Active',
-                    priority: selectedPriority,
-                    assigned_to_id: selectedTechId ? parseInt(selectedTechId) : null,
-                    resolved_by_id: null,
-                    notes: enteredNotes || null
-                };
-                await updateFault(fault.id, updatePayload);
-                faultReportModal.classList.add('hidden');
-                loadDashboardData(normalisedRole, userId);
-            } catch (error) {
-                showToast("Failed to approve: " + error.message, "error");
-                approveButton.textContent = "Approve ✓";
-                approveButton.disabled    = false;
-            }
-        };
-    }
-
-    // Wire up the Reject button if it was rendered
-    const rejectButton = document.getElementById('modal-btn-reject');
-    if (rejectButton) {
-        
-        rejectButton.onclick = async () => {
-            const enteredNotes = document.getElementById('modal-input-notes').value;
-
-            if (!enteredNotes.trim()) return showToast("Please provide a reason in the Notes section before rejecting.", "error");
-
-            rejectButton.textContent = "⏳";
-            rejectButton.disabled = true;
-
-            try {
-                const updatePayload = {
-                    status: 'Resolved',
-                    priority: 'Low',
-                    assigned_to_id: null,
-                    resolved_by_id: null,
-                    notes: `[REJECTED]: ${enteredNotes}`
-                };
-                await updateFault(fault.id, updatePayload);
-                faultReportModal.classList.add('hidden');
-                loadDashboardData(normalisedRole, userId);
-
-            } catch (error) {
-                showToast("Failed to reject: " + error.message, "error");
-                rejectButton.textContent = "Reject ✕";
-                rejectButton.disabled = false;
-            }
-        };
-    }
-
+    // DELETE BUTTON (Appears on both views)
     const deleteBtn = document.getElementById('modal-btn-delete');
     if (deleteBtn) {
-
         deleteBtn.onclick = async () => {
-            const confirmed = confirm(
-                `Delete fault F-${fault.id}? This action cannot be undone.`
-            );
-            if (!confirmed) return;
-
+            if (!confirm(`Delete fault F-${fault.id}? This action cannot be undone.`)) return;
             deleteBtn.textContent = '⌛ Deleting...';
             deleteBtn.disabled = true;
-
             try {
                 await deleteFault(fault.id);
                 document.getElementById('fault-report-modal').classList.add('hidden');
                 loadDashboardData(normalisedRole, userId);
             } catch (err) {
                 showToast('Failed to delete fault: ' + err.message, "error");
-                deleteBtn.textContent = 'Delete ♻';
+                deleteBtn.textContent = 'Delete 🗑️';
                 deleteBtn.disabled = false;
             }
         }
     }
 
-    faultReportModal.classList.remove('hidden');
+    // APPROVE RESOLUTION (Closes the fault)
+    const approveResBtn = document.getElementById('modal-btn-approve-res');
+    if (approveResBtn) {
+        approveResBtn.onclick = async () => {
+            approveResBtn.textContent = "⏳";
+            approveResBtn.disabled = true;
+            try {
+                await updateFault(fault.id, { 
+                    status: 'Resolved',
+                    resolved_by_id: fault.assigned_to_id // Credit the assigned tech
+                });
+                document.getElementById('fault-report-modal').classList.add('hidden');
+                loadDashboardData(normalisedRole, userId);
+            } catch (error) {
+                showToast("Failed to approve: " + error.message, "error");
+                approveResBtn.textContent = "Approve Resolution ✓";
+                approveResBtn.disabled = false;
+            }
+        };
+    }
+
+    // REJECT RESOLUTION (Returns to Active/Unassigned)
+    const rejectBtn = document.getElementById('modal-btn-reject');
+    if (rejectBtn) {
+        rejectBtn.onclick = async () => {
+            const enteredNotes = document.getElementById('modal-input-notes').value;
+            if (!enteredNotes.trim()) return showToast("Please provide feedback in the Notes section before rejecting.", "error");
+
+            rejectBtn.textContent = "⏳";
+            rejectBtn.disabled = true;
+            try {
+                await updateFault(fault.id, {
+                    status: 'Active',
+                    assigned_to_id: null,
+                    notes: fault.notes ? `${fault.notes}\n\n[REJECTED RESOLUTION]: ${enteredNotes}` : `[REJECTED RESOLUTION]: ${enteredNotes}`
+                });
+                document.getElementById('fault-report-modal').classList.add('hidden');
+                loadDashboardData(normalisedRole, userId);
+            } catch (error) {
+                showToast("Failed to reject: " + error.message, "error");
+                rejectBtn.textContent = "Reject & Return ↩️";
+                rejectBtn.disabled = false;
+            }
+        };
+    }
+
+    // RESOLVE DIRECTLY (Supervisor resolves a new fault immediately)
+    const resolveDirectBtn = document.getElementById('modal-btn-resolve-direct');
+    if (resolveDirectBtn) {
+        resolveDirectBtn.onclick = async () => {
+            resolveDirectBtn.textContent = "⏳";
+            resolveDirectBtn.disabled = true;
+            try {
+                await updateFault(fault.id, { 
+                    status: 'Resolved',
+                    resolved_by_id: userId 
+                });
+                document.getElementById('fault-report-modal').classList.add('hidden');
+                loadDashboardData(normalisedRole, userId);
+            } catch (error) {
+                showToast("Failed to resolve: " + error.message, "error");
+                resolveDirectBtn.textContent = "Resolve Directly";
+                resolveDirectBtn.disabled = false;
+            }
+        };
+    }
+
+    // APPROVE NEW REPORT (Moves to Active or In-Progress)
+    const approveNewBtn = document.getElementById('modal-btn-approve-new');
+    if (approveNewBtn) {
+        approveNewBtn.onclick = async () => {
+            const selectedPriority = document.getElementById('modal-select-priority').value;
+            const selectedTechId = document.getElementById('modal-btn-open-tech').getAttribute('data-tech-id');
+
+            if (!selectedPriority) return showToast("Please select a Priority level.", "error");
+
+            approveNewBtn.textContent = "⏳";
+            approveNewBtn.disabled = true;
+            try {
+                await updateFault(fault.id, {
+                    status: selectedTechId ? 'In-Progress' : 'Active',
+                    priority: selectedPriority,
+                    assigned_to_id: selectedTechId ? parseInt(selectedTechId) : null,
+                });
+                document.getElementById('fault-report-modal').classList.add('hidden');
+                loadDashboardData(normalisedRole, userId);
+            } catch (error) {
+                showToast("Failed to approve: " + error.message, "error");
+                approveNewBtn.textContent = "Approve ✓";
+                approveNewBtn.disabled = false;
+            }
+        };
+    }
+
+    document.getElementById('fault-report-modal').classList.remove('hidden');
 };
+
+
+
 
 
 // ============================================================================
@@ -1491,66 +1511,46 @@ const setupSupervisorEvents = (faults, tools, users, normalisedRole, userId) => 
     // --- REVIEW QUEUE — INLINE TABLE ACTIONS ---
     const reviewQueueTableBody = document.getElementById('review-faults-table-body');
     if (reviewQueueTableBody) {
-
         reviewQueueTableBody.onclick = async (e) => {
+            const btn = e.target.closest('.btn-solid');
+            if (!btn) return;
+            const faultId = parseInt(btn.getAttribute('data-id'));
+            const faultToUpdate = faults.find(f => f.id === faultId);
+            const isResolution = !!faultToUpdate.assigned_to_id;
 
-            // Open the full fault detail modal
-            if (e.target.classList.contains('btn-view-modal')) {
-                return openFaultModal(parseInt(e.target.getAttribute('data-id')), faults, users, normalisedRole, userId);
+            if (btn.classList.contains('btn-view-modal')) {
+                return openFaultModal(faultId, faults, users, normalisedRole, userId);
             }
 
-            // Quick-approve a fault directly from the review queue row
-            if (e.target.classList.contains('btn-approve-fault')) {
-                const approveButton = e.target;
-                const faultId = parseInt(approveButton.getAttribute('data-id'));
-                const tableRow = approveButton.closest('tr');
-                const selectedPriority = tableRow.querySelector('.select-priority').value;
-                const selectedTechId = tableRow.querySelector('.btn-open-tech-modal').getAttribute('data-tech-id');
-
-                if (!selectedPriority) return showToast("Please select a Priority level before approving this fault.", "error");
-
-                approveButton.textContent = "⏳";
-                approveButton.disabled    = true;
-
+            // Quick Approve ✓
+            if (btn.classList.contains('btn-approve-fault')) {
+                btn.textContent = "⏳";
+                btn.disabled = true;
                 try {
-                    await updateFault(faultId, {
-                        status: selectedTechId ? 'In-Progress' : 'Active',
-                        priority: selectedPriority,
-                        assigned_to_id: selectedTechId ? parseInt(selectedTechId) : null,
-                        resolved_by_id: null,
-                        notes: null
-                    });
+                    const updatePayload = isResolution ? { status: 'Resolved', resolved_by_id: faultToUpdate.assigned_to_id } : { status: 'Active', priority: faultToUpdate.priority || 'Medium' };
+                        
+                    await updateFault(faultId, updatePayload);
                     loadDashboardData(normalisedRole, userId);
                 } catch (error) {
                     showToast("Failed to approve: " + error.message, "error");
-                    approveButton.textContent = "✓";
-                    approveButton.disabled = false;
+                    btn.textContent = "✓";
+                    btn.disabled = false;
                 }
             }
 
-            // Quick-reject a fault directly from the review queue row
-            if (e.target.classList.contains('btn-reject-fault')) {
-                const rejectButton = e.target;
-                const faultId = parseInt(rejectButton.getAttribute('data-id'));
-                const rejectionReason  = prompt("Enter a reason for rejecting this fault (optional):");
-                if (rejectionReason === null) return; // User cancelled the prompt
-
-                rejectButton.textContent = "⏳";
-                rejectButton.disabled = true;
-
+            // Quick Delete 🗑️
+            if (btn.classList.contains('btn-delete-fault')) {
+                const confirmed = confirm(`Permanently delete fault F-${faultId}? This action cannot be undone.`);
+                if (!confirmed) return;
+                btn.textContent = "⏳";
+                btn.disabled = true;
                 try {
-                    await updateFault(faultId, {
-                        status: 'Resolved',
-                        priority: 'Low',
-                        assigned_to_id:  null,
-                        resolved_by_id:  null,
-                        notes: rejectionReason ? `[REJECTED]: ${rejectionReason}` : `[REJECTED]: No reason provided by supervisor.`
-                    });
+                    await deleteFault(faultId);
                     loadDashboardData(normalisedRole, userId);
-                } catch (error) {
-                    showToast("Failed to reject: " + error.message, "error");
-                    rejectButton.textContent = "✕";
-                    rejectButton.disabled = false;
+                } catch (err) {
+                    showToast('Failed to delete: ' + err.message, "error");
+                    btn.textContent = "🗑️";
+                    btn.disabled = false;
                 }
             }
         };
