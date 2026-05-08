@@ -8,7 +8,7 @@
    04. DASHBOARD LAYOUT (Grid, Header, Sidebar)
    05. UI WIDGETS (KPI Cards, Clickable KPIs, Tables)
    06. WORKLOAD BALANCING (Collapsible Tech Cards)
-   07. MOBILE RESPONSIVENESS
+   08. MOBILE RESPONSIVENESS
 ========================================================= */
 
 /* =========================================================
@@ -520,4 +520,65 @@ td { padding: 12px 10px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
         font-size: 0.7rem !important;
         white-space: normal !important;
     }
+}
+
+
+
+/* =========================================================
+   08. TOAST NOTIFICATIONS
+========================================================= */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10006; /* Above absolutely everything */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none; /* Let clicks pass through to the AR scene */
+    width: 90%;
+    max-width: 400px;
+}
+
+.ar-toast {
+    padding: 15px 20px;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.4;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transform: translateY(-20px);
+    animation: toastEnter 0.4s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Success - Green */
+.ar-toast.toast-success {
+    background: rgba(34, 197, 94, 0.95);
+    backdrop-filter: blur(8px);
+    border: 1px solid #16a34a;
+}
+
+/* Error/Warning - Red */
+.ar-toast.toast-error {
+    background: rgba(239, 68, 68, 0.95);
+    backdrop-filter: blur(8px);
+    border: 1px solid #dc2626;
+}
+
+.ar-toast.fade-out {
+    animation: toastExit 0.3s forwards;
+}
+
+@keyframes toastEnter {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toastExit {
+    to { opacity: 0; transform: translateY(-20px); }
 }

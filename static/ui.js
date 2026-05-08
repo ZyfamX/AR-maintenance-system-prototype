@@ -1,4 +1,5 @@
 import { login, logout, getFaults, getTools, getUsers, updateFault, deleteFault } from './api.js';
+import { showToast, formatTime, getUserFullName } from './utils.js';
 
 
 // ============================================================================
@@ -187,7 +188,7 @@ export function setupEventListeners() {
                 }, 500);
                 
             } catch (err) {
-                alert("Camera access is required to use the AR Scanner.");
+                showToast("Failed to access camera: " + err.message, "error");
                 arLaunchButton.innerHTML = originalText;
                 arLaunchButton.disabled = false;
             }
@@ -282,12 +283,11 @@ export function setupEventListeners() {
                 localStorage.removeItem('ar_user');
                 window.location.reload();
             } catch (error) {
-                // If the API warns about tools that haven't been returned yet,
-                // show our custom confirmation modal rather than a browser alert
+                // If the API warns about tools that haven't been returned yet show special warning modal — otherwise just show a generic error toast
                 if (error.message.includes("WARNING_UNRETURNED_TOOLS")) {
                     if (logoutWarningModal) logoutWarningModal.classList.remove('hidden');
                 } else {
-                    alert("Logout failed: " + error.message);
+                    showToast("Logout failed: " + error.message, "error");
                 }
             }
         });
@@ -306,7 +306,7 @@ export function setupEventListeners() {
                 localStorage.removeItem('ar_user');
                 window.location.reload();
             } catch (err) {
-                alert("Force logout failed: " + err.message);
+                showToast("Force logout failed: " + err.message, "error");
             }
         };
     }
@@ -489,7 +489,7 @@ const renderDashboardTables = (visibleFaults, visibleTools, users) => {
                     </tr>`;
             } else {
                 // TECHNICIAN ROW (Compact Data: Type, Time, Location)
-                const checkoutTimeText = tool.checkout_timestamp ? new Date(tool.checkout_timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+                const checkoutTimeText = formatTime(tool.checkout_timestamp);
                 return `
                     <tr>
                         <td style="font-weight: bold;">${tool.tool_type}</td>
@@ -565,10 +565,10 @@ const renderAllTools = (tools, users) => {
     });
 
     tableBody.innerHTML = filteredTools.map(t => {
+
         const toolBadgeClass = t.status === 'Available' ? 'badge-available' : 'badge-out';
-        const checkoutTimeText = t.checkout_timestamp
-            ? new Date(t.checkout_timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-            : '<span style="color:#64748b;">N/A</span>';
+        const checkoutTimeText = formatTime(t.checkout_timestamp);
+
         return `
             <tr>
                 <td>${t.id}</td>
@@ -626,7 +626,7 @@ const renderAllFaults = (faults, users) => {
     tableBody.innerHTML = filteredFaults.map(f => {
         const statusBadgeClass   = f.status === 'Resolved' ? 'badge-available': f.status === 'In-Review' ? 'badge-review': f.status === 'In-Progress' ? 'badge-assigned': 'badge-active';
         const priorityBadgeClass = f.priority?.toUpperCase() === 'HIGH' ? 'badge-high': f.priority?.toUpperCase() === 'MEDIUM' ? 'badge-medium': 'badge-low';
-        const reportedTimeText = f.timestamp ? new Date(f.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }): '<span style="color:#64748b;">N/A</span>';
+        const reportedTimeText = formatTime(f.timestamp);
 
         return `
             <tr>
@@ -682,7 +682,7 @@ const renderReviewQueue = (faults, users) => {
     }
 
     tableBody.innerHTML = pendingReviewFaults.map(f => {
-        const reportedTimeText = f.timestamp ? new Date(f.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }): '<span style="color:#64748b;">N/A</span>';
+        const reportedTimeText = formatTime(f.timestamp);
         const priorityBadgeClass = f.priority?.toUpperCase() === 'HIGH' ? 'badge-high': f.priority?.toUpperCase() === 'MEDIUM' ? 'badge-medium': 'badge-low';
 
         return `
@@ -845,7 +845,7 @@ const setupTechnicianViews = (myFaults, allTools, users, normalisedRole, userId)
         }
 
         tableBody.innerHTML = myCheckedOutTools.map(t => {
-            const checkoutTimeText = t.checkout_timestamp? new Date(t.checkout_timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+            const checkoutTimeText = formatTime(t.checkout_timestamp);
             return `
                 <tr>
                     <td>${t.id}</td>
@@ -1058,7 +1058,7 @@ const openFaultModal = (faultId, faults, users, normalisedRole, userId) => {
             <div><strong style="color:#ffffff;">Reported By:</strong> <br>${getUserFullName(users, fault.reported_by_id)}</div>
             <div><strong style="color:#ffffff;">Assigned To:</strong> <br>${getUserFullName(users, fault.assigned_to_id)}</div>
             <div><strong style="color:#ffffff;">Resolved By:</strong> <br>${getUserFullName(users, fault.resolved_by_id)}</div>
-            <div><strong style="color:#ffffff;">Logged Time:</strong> <br>${fault.timestamp ? new Date(fault.timestamp).toLocaleString() : 'N/A'}</div>
+            <div><strong style="color:#ffffff;">Logged Time:</strong> <br>${formatTime(fault.timestamp)}</div>
         </div>
         <hr style="border: 0; border-top: 1px solid #475569; margin: 15px 0;">
         <div>
@@ -1081,7 +1081,7 @@ const openFaultModal = (faultId, faults, users, normalisedRole, userId) => {
             const selectedTechId = document.getElementById('modal-btn-open-tech').getAttribute('data-tech-id');
             const enteredNotes = document.getElementById('modal-input-notes').value;
 
-            if (!selectedPriority) return alert("Please select a Priority level before approving this fault.");
+            if (!selectedPriority) return showToast("Please select a Priority level before approving this fault.", "error");
 
             approveButton.textContent = "⏳";
             approveButton.disabled    = true;
@@ -1098,7 +1098,7 @@ const openFaultModal = (faultId, faults, users, normalisedRole, userId) => {
                 faultReportModal.classList.add('hidden');
                 loadDashboardData(normalisedRole, userId);
             } catch (error) {
-                alert("Failed to approve: " + error.message);
+                showToast("Failed to approve: " + error.message, "error");
                 approveButton.textContent = "Approve ✓";
                 approveButton.disabled    = false;
             }
@@ -1112,7 +1112,7 @@ const openFaultModal = (faultId, faults, users, normalisedRole, userId) => {
         rejectButton.onclick = async () => {
             const enteredNotes = document.getElementById('modal-input-notes').value;
 
-            if (!enteredNotes.trim()) return alert("Please provide a reason in the Notes section before rejecting.");
+            if (!enteredNotes.trim()) return showToast("Please provide a reason in the Notes section before rejecting.", "error");
 
             rejectButton.textContent = "⏳";
             rejectButton.disabled = true;
@@ -1130,7 +1130,7 @@ const openFaultModal = (faultId, faults, users, normalisedRole, userId) => {
                 loadDashboardData(normalisedRole, userId);
 
             } catch (error) {
-                alert("Failed to reject: " + error.message);
+                showToast("Failed to reject: " + error.message, "error");
                 rejectButton.textContent = "Reject ✕";
                 rejectButton.disabled = false;
             }
@@ -1154,7 +1154,7 @@ const openFaultModal = (faultId, faults, users, normalisedRole, userId) => {
                 document.getElementById('fault-report-modal').classList.add('hidden');
                 loadDashboardData(normalisedRole, userId);
             } catch (err) {
-                alert('Failed to delete fault: ' + err.message);
+                showToast('Failed to delete fault: ' + err.message, "error");
                 deleteBtn.textContent = 'Delete ♻';
                 deleteBtn.disabled = false;
             }
@@ -1364,7 +1364,7 @@ const setupSupervisorEvents = (faults, tools, users, normalisedRole, userId) => 
                         loadDashboardData(normalisedRole, userId);
                         return;
                     } catch (error) {
-                        alert("Failed to reassign: " + error.message);
+                        showToast("Failed to reassign: " + error.message, "error");
                         e.target.textContent = "Select";
                         e.target.disabled = false;
                         return;
@@ -1411,7 +1411,7 @@ const setupSupervisorEvents = (faults, tools, users, normalisedRole, userId) => 
                 jobSelectionModal.classList.add('hidden');
                 loadDashboardData(normalisedRole, userId);
             } catch (error) {
-                alert("Failed to assign job: " + error.message);
+                showToast("Failed to assign job: " + error.message, "error");
                 confirmAssignButton.textContent = "Give Job";
                 confirmAssignButton.disabled = false;
             }
@@ -1507,7 +1507,7 @@ const setupSupervisorEvents = (faults, tools, users, normalisedRole, userId) => 
                 const selectedPriority = tableRow.querySelector('.select-priority').value;
                 const selectedTechId = tableRow.querySelector('.btn-open-tech-modal').getAttribute('data-tech-id');
 
-                if (!selectedPriority) return alert("Please select a Priority level before approving this fault.");
+                if (!selectedPriority) return showToast("Please select a Priority level before approving this fault.", "error");
 
                 approveButton.textContent = "⏳";
                 approveButton.disabled    = true;
@@ -1522,7 +1522,7 @@ const setupSupervisorEvents = (faults, tools, users, normalisedRole, userId) => 
                     });
                     loadDashboardData(normalisedRole, userId);
                 } catch (error) {
-                    alert("Failed to approve: " + error.message);
+                    showToast("Failed to approve: " + error.message, "error");
                     approveButton.textContent = "✓";
                     approveButton.disabled = false;
                 }
@@ -1548,7 +1548,7 @@ const setupSupervisorEvents = (faults, tools, users, normalisedRole, userId) => 
                     });
                     loadDashboardData(normalisedRole, userId);
                 } catch (error) {
-                    alert("Failed to reject: " + error.message);
+                    showToast("Failed to reject: " + error.message, "error");
                     rejectButton.textContent = "✕";
                     rejectButton.disabled = false;
                 }
@@ -1640,17 +1640,3 @@ const setupSupervisorEvents = (faults, tools, users, normalisedRole, userId) => 
 };
 
 
-// ============================================================================
-// UTILITY HELPERS
-// ============================================================================
-
-/**
- * Returns the full name of a user by their ID.
- * Falls back to a styled "Unassigned" label if no ID is provided,
- * or a plain "User {id}" string if the ID isn't found in the list.
- */
-const getUserFullName = (users, id) => {
-    if (!id) return '<span style="color:#64748b;">Unassigned</span>';
-    const matchedUser = users.find(user => user.id === id);
-    return matchedUser ? `${matchedUser.first_name} ${matchedUser.last_name}` : `User ${id}`;
-};

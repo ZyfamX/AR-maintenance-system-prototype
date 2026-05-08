@@ -1,10 +1,5 @@
 import { getTools, getFaults, getUsers, scanTool, getFaultByMarker, updateFault, createFault, startSessionChecker } from './api.js';
-
-if (sessionStorage.getItem("sessionExpired") === "true") {
-    sessionStorage.removeItem("sessionExpired");
-
-    alert("Session expired! Please log in again.");
-}
+import { showToast, formatTime, getUserFullName, getUserLocation } from './utils.js';
 
 // ============================================================================
 // CUSTOM A-FRAME COMPONENTS
@@ -167,57 +162,6 @@ try {
     const stored = localStorage.getItem('ar_user'); 
     if (stored) currentUser = JSON.parse(stored);
 } catch (_) {}
-
-
-// ============================================================================
-// UTILITY HELPERS
-// ============================================================================
-
-/**
- * Returns the full name of a user by their ID.
- * Falls back to a generic user string if the ID isn't found in the dictionary.
- */
-function userName(userId) {
-    if (userId === null || userId === undefined) return '—';
-    const user = usersById[userId];
-    return user ? `${user.first_name} ${user.last_name}` : `User #${userId}`;
-}
-
-/**
- * Safely formats an ISO timestamp into a readable localized time and date string.
- */
-function formatTime(iso) {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    if (isNaN(d)) return iso;
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' — ' + d.toLocaleDateString('en-GB');
-}
-
-
-/**
- * Creates a beautiful sliding Toast notification on the screen.
- * @param {string} message - The text to display
- * @param {string} type - 'success' or 'error'
- */
-function showToast(message, type = 'success') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-
-    const toast = document.createElement('div');
-    toast.className = `ar-toast toast-${type}`;
-    
-    // Add an icon based on the type
-    const icon = type === 'success' ? '✅' : '🚫';
-    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
-
-    container.appendChild(toast);
-
-    // Automatically remove it after 4 seconds
-    setTimeout(() => {
-        toast.classList.add('fade-out');
-        toast.addEventListener('animationend', () => toast.remove());
-    }, 4000);
-}
 
 
 // ============================================================================
@@ -539,7 +483,7 @@ async function onMarkerFound(markerId) {
                 } else if (currentUser && activeItem.current_user_id == currentUser.id) {
                     strV3 = 'IN USE BY YOU'; colV3 = '#3b82f6';
                 } else {
-                    strV3 = `IN USE BY ${userName(activeItem.current_user_id).toUpperCase()}`; colV3 = '#fb923c';
+                    strV3 = `IN USE BY ${getUserFullName(Object.values(usersById), activeItem.reported_by_id).toUpperCase()}`; colV3 = '#fb923c';
                 }
 
             } else if (activeType === 'fault') {
@@ -558,7 +502,7 @@ async function onMarkerFound(markerId) {
                 colV2 = STATUS_COLORS[activeItem.status] || '#ffffff';
                 
                 strL3 = "REPORTED BY:"; 
-                strV3 = userName(activeItem.reported_by_id).toUpperCase(); 
+                strV3 = getUserFullName(Object.values(usersById), activeItem.reported_by_id).toUpperCase(); 
                 colV3 = "#ffffff";
             }
 
@@ -781,7 +725,7 @@ function openARFaultModal(fault) {
     body.innerHTML = `
         <div class="ar-modal-grid">
             <div><strong>Location:</strong> ${fault.location}</div>
-            <div><strong>Reported By:</strong> ${userName(fault.reported_by_id)}</div>
+            <div><strong>Reported By:</strong> ${getUserFullName(Object.values(usersById), fault.reported_by_id)}</div>
             <div><strong>Priority:</strong> <span style="color: ${pColor}; font-weight: bold;">${fault.priority || 'N/A'}</span></div>
             <div><strong>Status:</strong> <span style="color: ${sColor}; font-weight: bold;">${fault.status}</span></div>
         </div>
@@ -936,23 +880,6 @@ function openCreateFaultModal(markerId) {
 }
 
 
-/**
- * Prompts the browser/device for the user's current GPS location.
- */
-function getUserLocation() {
-    return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-            reject(new Error("Geolocation is not supported by your browser."));
-        } else {
-            navigator.geolocation.getCurrentPosition(
-                (position) => resolve({ lat: position.coords.latitude, lon: position.coords.longitude }),
-                (error) => reject(new Error("Location permission denied. You must allow GPS access to prove you are on-site."))
-            );
-        }
-    });
-}
-
-
 // ============================================================================
 // EVENT LISTENERS & BOOTSTRAPPING
 // ============================================================================
@@ -981,6 +908,14 @@ window.addEventListener('orientationchange', () => {
         }, delay);
     });
 });
+
+
+if (sessionStorage.getItem("sessionExpired") === "true") {
+    sessionStorage.removeItem("sessionExpired");
+
+    showToast("Session expired! Please log in again.", "error");
+}
+
 
 // Start the AR application flow
 checkCameraSupport();
