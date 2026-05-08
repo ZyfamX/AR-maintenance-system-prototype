@@ -28,8 +28,10 @@ AFRAME.registerComponent('dynamic-layout', {
         let dir = 1; 
         let isFlipped = false; 
         
-        if (this.markerPos.x > 0) dir = -1; 
-        // Trigger flip if the marker is anywhere in the top half of the screen
+        // Intelligent 3-Zone X-Axis (Left, Center, Right)
+        if (this.markerPos.x > 0.25) dir = -1; // Marker on right, shift left
+        else if (this.markerPos.x >= -0.25) dir = 0; // Marker in middle, center HUD!
+        
         if (this.markerPos.y > 0.1) isFlipped = true; 
 
         // PERFORMANCE LOCK
@@ -38,17 +40,15 @@ AFRAME.registerComponent('dynamic-layout', {
         this.currentDir = dir;
         this.currentFlipped = isFlipped;
 
-        const offsetX = 1.5 * dir;
-        const centerX = 1.6 * dir;
-        const accentX = dir === 1 ? 0.025 : -3.175; 
-        const leftEdgeX = dir === 1 ? 0.2 : -3.0; 
-        const valueX = dir === 1 ? 1.3 : -1.9;    
+        // --- THE X-AXIS SCREEN BOUNDS FIX ---
+        const offsetX = 0.6 * dir; 
+        const centerX = 1.6 * dir; 
+        const accentX = centerX - 1.575; 
+        const leftEdgeX = centerX - 1.4; 
+        const valueX = centerX - 0.3;    
 
-        // --- THE 3D SPATIAL FIX ---
-        const yPos = isFlipped ? 1.7 : 1.0;
-        const zPos = isFlipped ? 1.2 : 0.0;
-
-        // Shift the internal content down by 1.5m (the height of the box) when flipped
+        const yPos = isFlipped ? 1.7 : 1.0; 
+        const zPos = isFlipped ? 1.2 : -1.5; 
         const localY = isFlipped ? -1.5 : 0.0;
 
         // Safely update the parent position (The Hinge)
@@ -470,19 +470,20 @@ async function onMarkerFound(markerId) {
             markerEl.object3D.getWorldPosition(markerPos);
             markerPos.project(camera); 
             
-            if (markerPos.x > 0) dir = -1; 
+            if (markerPos.x > 0.25) dir = -1; 
+            else if (markerPos.x >= -0.25) dir = 0; 
+            
             if (markerPos.y > 0.1) isFlipped = true; 
         }
 
-        const offsetX = 1.5 * dir;
+        const offsetX = 0.6 * dir;
         const centerX = 1.6 * dir;
-        const accentX = dir === 1 ? 0.025 : -3.175; 
-        const leftEdgeX = dir === 1 ? 0.2 : -3.0; 
-        const valueX = dir === 1 ? 1.3 : -1.9;
+        const accentX = centerX - 1.575; 
+        const leftEdgeX = centerX - 1.4; 
+        const valueX = centerX - 0.3;    
 
-
-        const yPos = isFlipped ? 1.7 : 1.0;
-        const zPos = isFlipped ? 1.2 : 0.0;
+        const yPos = isFlipped ? 1.7 : 1.0; 
+        const zPos = isFlipped ? 1.2 : -1.5; 
         const localY = isFlipped ? -1.5 : 0.0;
 
         // Apply calculated positions
