@@ -5,29 +5,124 @@ import { getTools, getFaults, getUsers, scanTool, getFaultByMarker, updateFault,
 // ============================================================================
 
 /**
- * Registers a custom A-Frame component that forces the 3D HUD to always face 
- * the camera (billboarding) and auto-scales it based on the user's distance 
- * to the physical marker so it remains readable.
+ * Monitors the camera angle 60 times a second.
+ * Intelligently flips the HUD layout if the user moves their camera,
+ * but caches the state to prevent battery-draining DOM updates.
  */
-AFRAME.registerComponent('smart-hud', {
+AFRAME.registerComponent('dynamic-layout', {
+    init: function() {
+        this.markerPos = new THREE.Vector3(); 
+        this.currentDir = null;
+        this.currentFlipped = null; 
+    },
     tick: function () {
         const camera = this.el.sceneEl.camera;
         if (!camera) return;
 
-        // Get the true 3D positions of both the HUD and the Camera
-        const hudPos = new THREE.Vector3();
-        this.el.object3D.getWorldPosition(hudPos);
+        const markerEl = this.el.parentElement;
+        if (!markerEl) return;
+
+        markerEl.object3D.getWorldPosition(this.markerPos);
+        this.markerPos.project(camera); 
+
+        let dir = 1; 
+        let isFlipped = false; 
         
-        const cameraPos = new THREE.Vector3();
-        camera.getWorldPosition(cameraPos);
+        if (this.markerPos.x > 0) dir = -1; 
+        // Trigger flip if the marker is anywhere in the top half of the screen
+        if (this.markerPos.y > 0.1) isFlipped = true; 
 
-        // Force the flat side of the panel to look directly at the phone lens
-        this.el.object3D.lookAt(cameraPos);
+        // PERFORMANCE LOCK
+        if (this.currentDir === dir && this.currentFlipped === isFlipped) return;
+        
+        this.currentDir = dir;
+        this.currentFlipped = isFlipped;
 
-        // Auto-Scale based on distance
-        const distance = hudPos.distanceTo(cameraPos);
+        const offsetX = 1.5 * dir;
+        const centerX = 1.6 * dir;
+        const accentX = dir === 1 ? 0.025 : -3.175; 
+        const leftEdgeX = dir === 1 ? 0.2 : -3.0; 
+        const valueX = dir === 1 ? 1.3 : -1.9;    
+
+        // --- THE 3D SPATIAL FIX ---
+        const yPos = isFlipped ? 1.7 : 1.0;
+        const zPos = isFlipped ? 1.2 : 0.0;
+
+        // Shift the internal content down by 1.5m (the height of the box) when flipped
+        const localY = isFlipped ? -1.5 : 0.0;
+
+        // Safely update the parent position (The Hinge)
+        this.el.querySelector('.ar-hud')?.setAttribute('position', `${offsetX} ${yPos} ${zPos}`);
+        
+        // Children coordinates (Added the localY shift to move them below the hinge)
+        this.el.querySelector('.hud-bg')?.setAttribute('position', `${centerX} ${0.75 + localY} -0.1`);
+        this.el.querySelector('.hud-accent')?.setAttribute('position', `${accentX} ${0.75 + localY} 0.01`);
+        this.el.querySelector('.hud-title')?.setAttribute('position', `${leftEdgeX} ${1.25 + localY} 0.1`);
+        this.el.querySelector('.hud-div-1')?.setAttribute('position', `${centerX} ${0.75 + localY} 0.05`);
+        this.el.querySelector('.hud-div-2')?.setAttribute('position', `${centerX} ${0.25 + localY} 0.05`);
+        this.el.querySelector('.hud-lbl-1')?.setAttribute('position', `${leftEdgeX} ${0.95 + localY} 0.1`);
+        this.el.querySelector('.hud-val-1')?.setAttribute('position', `${valueX} ${0.95 + localY} 0.1`);
+        this.el.querySelector('.hud-lbl-2')?.setAttribute('position', `${leftEdgeX} ${0.55 + localY} 0.1`);
+        this.el.querySelector('.hud-val-2')?.setAttribute('position', `${valueX} ${0.55 + localY} 0.1`);
+        this.el.querySelector('.hud-lbl-3')?.setAttribute('position', `${leftEdgeX} ${0.10 + localY} 0.1`);
+        this.el.querySelector('.hud-val-3')?.setAttribute('position', `${valueX} ${0.10 + localY} 0.1`);
+
+        const lineEl = this.el.querySelector('.hud-line');
+        if (lineEl) {
+            const lineAttr = lineEl.getAttribute('line');
+            const mainColor = (lineAttr && lineAttr.color) ? lineAttr.color : '#ffffff';
+            
+            // The line stays locked to the hinge!
+            lineEl.setAttribute('line', `start: 0 0 0; end: ${offsetX} ${yPos} ${zPos}; color: ${mainColor}; opacity: 0.9; width: 5`);
+            lineEl.setAttribute('line__2', `start: 0 0.03 0; end: ${offsetX} ${yPos + 0.03} ${zPos}; color: ${mainColor}; opacity: 0.4`); 
+            lineEl.setAttribute('line__3', `start: 0 -0.03 0; end: ${offsetX} ${yPos - 0.03} ${zPos}; color: ${mainColor}; opacity: 0.4`);
+        }
+    }
+});
+
+
+/**
+ * Advanced AR HUD Controller
+ * Prevents 90-degree axis flipping using Absolute Quaternion Matching,
+ * and uses Linear Interpolation (LERP) to absorb AR camera jitter.
+ */
+AFRAME.registerComponent('smart-hud', {
+    init: function () {
+        // Caching variables to prevent garbage collection lag
+        this.targetScale = new THREE.Vector3(1, 1, 1);
+        this.currentScale = new THREE.Vector3(1, 1, 1);
+        this.hudPos = new THREE.Vector3();
+        this.cameraPos = new THREE.Vector3();
+        
+        this.cameraQuat = new THREE.Quaternion();
+        this.parentQuat = new THREE.Quaternion();
+    },
+    tick: function () {
+        const camera = this.el.sceneEl.camera;
+        if (!camera) return;
+
+        // --- 1. THE 90-DEGREE FLIP FIX (Absolute Quaternion Matching) ---
+        // Instead of lookAt(), we mathematically force the HUD to exactly match the phone's 
+        // screen rotation, completely canceling out the physical paper's twisted rotation!
+        camera.getWorldQuaternion(this.cameraQuat);
+        this.el.object3D.parent.getWorldQuaternion(this.parentQuat);
+        
+        this.parentQuat.invert(); // Reverse the marker's physical tilt
+        this.el.object3D.quaternion.copy(this.parentQuat).multiply(this.cameraQuat);
+
+        // --- 2. THE JITTER FIX (Smooth Scale Lerping) ---
+        this.el.object3D.getWorldPosition(this.hudPos);
+        camera.getWorldPosition(this.cameraPos);
+
+        // Calculate the ideal size based on distance
+        const distance = this.hudPos.distanceTo(this.cameraPos);
         const scaleFactor = Math.max(0.6, distance * 0.15); 
-        this.el.object3D.scale.set(scaleFactor, scaleFactor, scaleFactor);
+        this.targetScale.set(scaleFactor, scaleFactor, scaleFactor);
+
+        // LERP: Instead of snapping instantly (which causes shaking), 
+        // we smoothly glide towards the target size by 10% every frame.
+        this.currentScale.lerp(this.targetScale, 0.1); 
+        this.el.object3D.scale.copy(this.currentScale);
     }
 });
 
@@ -292,6 +387,9 @@ async function onMarkerFound(markerId) {
             hudWrapper = document.createElement('a-entity');
             hudWrapper.setAttribute('class', 'ar-hud-wrapper');
 
+            // handles dynamic flipping and layout adjustments based on camera angle
+            hudWrapper.setAttribute('dynamic-layout', '');
+
             // A glowing, see-through square that covers the physical barcode
             const highlighter = document.createElement('a-plane');
             highlighter.setAttribute('class', 'hud-highlighter');
@@ -363,40 +461,43 @@ async function onMarkerFound(markerId) {
 
         // DYNAMIC MATH: Project HUD away from the nearest screen edge
         let dir = 1; 
+        let isFlipped = false; 
+
         const cameraEl = document.querySelector('[camera]');
         if (cameraEl && cameraEl.components.camera) {
             const camera = cameraEl.components.camera.camera;
             const markerPos = new THREE.Vector3();
             markerEl.object3D.getWorldPosition(markerPos);
             markerPos.project(camera); 
+            
             if (markerPos.x > 0) dir = -1; 
+            if (markerPos.y > 0.1) isFlipped = true; 
         }
 
         const offsetX = 1.5 * dir;
         const centerX = 1.6 * dir;
         const accentX = dir === 1 ? 0.025 : -3.175; 
-        
         const leftEdgeX = dir === 1 ? 0.2 : -3.0; 
-        const valueX = dir === 1 ? 1.3 : -1.9;    
+        const valueX = dir === 1 ? 1.3 : -1.9;
 
-        // Apply calculated positions (FIXED SPACING FOR MULTI-LINE WRAPPING)
-        hudWrapper.querySelector('.ar-hud').setAttribute('position', `${offsetX} 1 0`);
-        hudWrapper.querySelector('.hud-bg').setAttribute('position', `${centerX} 0.75 -0.1`);
-        hudWrapper.querySelector('.hud-accent').setAttribute('position', `${accentX} 0.75 0.01`);
-        
-        hudWrapper.querySelector('.hud-title').setAttribute('position', `${leftEdgeX} 1.25 0.1`);
-        
-        hudWrapper.querySelector('.hud-div-1').setAttribute('position', `${centerX} 0.75 0.05`);
-        hudWrapper.querySelector('.hud-div-2').setAttribute('position', `${centerX} 0.25 0.05`);
 
-        hudWrapper.querySelector('.hud-lbl-1').setAttribute('position', `${leftEdgeX} 0.95 0.1`);
-        hudWrapper.querySelector('.hud-val-1').setAttribute('position', `${valueX} 0.95 0.1`);
-        
-        hudWrapper.querySelector('.hud-lbl-2').setAttribute('position', `${leftEdgeX} 0.55 0.1`);
-        hudWrapper.querySelector('.hud-val-2').setAttribute('position', `${valueX} 0.55 0.1`);
-        
-        hudWrapper.querySelector('.hud-lbl-3').setAttribute('position', `${leftEdgeX} 0.10 0.1`);
-        hudWrapper.querySelector('.hud-val-3').setAttribute('position', `${valueX} 0.10 0.1`);
+        const yPos = isFlipped ? 1.7 : 1.0;
+        const zPos = isFlipped ? 1.2 : 0.0;
+        const localY = isFlipped ? -1.5 : 0.0;
+
+        // Apply calculated positions
+        hudWrapper.querySelector('.ar-hud').setAttribute('position', `${offsetX} ${yPos} ${zPos}`);
+        hudWrapper.querySelector('.hud-bg').setAttribute('position', `${centerX} ${0.75 + localY} -0.1`);
+        hudWrapper.querySelector('.hud-accent').setAttribute('position', `${accentX} ${0.75 + localY} 0.01`);
+        hudWrapper.querySelector('.hud-title').setAttribute('position', `${leftEdgeX} ${1.25 + localY} 0.1`);
+        hudWrapper.querySelector('.hud-div-1').setAttribute('position', `${centerX} ${0.75 + localY} 0.05`);
+        hudWrapper.querySelector('.hud-div-2').setAttribute('position', `${centerX} ${0.25 + localY} 0.05`);
+        hudWrapper.querySelector('.hud-lbl-1').setAttribute('position', `${leftEdgeX} ${0.95 + localY} 0.1`);
+        hudWrapper.querySelector('.hud-val-1').setAttribute('position', `${valueX} ${0.95 + localY} 0.1`);
+        hudWrapper.querySelector('.hud-lbl-2').setAttribute('position', `${leftEdgeX} ${0.55 + localY} 0.1`);
+        hudWrapper.querySelector('.hud-val-2').setAttribute('position', `${valueX} ${0.55 + localY} 0.1`);
+        hudWrapper.querySelector('.hud-lbl-3').setAttribute('position', `${leftEdgeX} ${0.10 + localY} 0.1`);
+        hudWrapper.querySelector('.hud-val-3').setAttribute('position', `${valueX} ${0.10 + localY} 0.1`);
 
         // Populate Live Data with Dashboard Colors
         if (activeItem) {
@@ -454,18 +555,15 @@ async function onMarkerFound(markerId) {
                 colV3 = "#ffffff";
             }
 
-            // Thick Tether
-            lineEl.setAttribute('line', `start: 0 0 0; end: ${offsetX} 1 0; color: ${mainColor}; opacity: 0.9; width: 5`);
-            lineEl.setAttribute('line__2', `start: 0 0.03 0; end: ${offsetX} 1.03 0; color: ${mainColor}; opacity: 0.4`); 
-            lineEl.setAttribute('line__3', `start: 0 -0.03 0; end: ${offsetX} 0.97 0; color: ${mainColor}; opacity: 0.4`);
+            // Update the tether lines to connect strictly to the HUD's 3D origin
+            lineEl.setAttribute('line', `start: 0 0 0; end: ${offsetX} ${yPos} ${zPos}; color: ${mainColor}; opacity: 0.9; width: 5`);
+            lineEl.setAttribute('line__2', `start: 0 0.03 0; end: ${offsetX} ${yPos + 0.03} ${zPos}; color: ${mainColor}; opacity: 0.4`); 
+            lineEl.setAttribute('line__3', `start: 0 -0.03 0; end: ${offsetX} ${yPos - 0.03} ${zPos}; color: ${mainColor}; opacity: 0.4`);
 
             accentEl.setAttribute('color', mainColor);
             titleEl.setAttribute('text', `value: ${titleStr}; color: #ffffff; width: 3.0; align: left; anchor: left; wrapCount: 20; font: roboto;`);
             
-            // --- UX FIX: HARD CAPPED WIDTH ---
-            // Labels stay wide (2.8) because they are short. 
-            // Values are physically capped at 1.8 width with a wrapCount of 19. 
-            // This forces long locations to drop to a new line without changing font size or breaking out of the box!
+            // Text width limits
             const fmtLbl = (val) => `value: ${val}; color: #94a3b8; width: 2.8; align: left; anchor: left; wrapCount: 30; font: roboto;`;
             const fmtVal = (val, col) => `value: ${val}; color: ${col}; width: 1.8; align: left; anchor: left; wrapCount: 19; font: roboto;`;
             
@@ -505,7 +603,7 @@ function onMarkerLost(markerId) {
  * Provides the Check-Out or Return Tool buttons depending on its status.
  */
 function renderToolPanel(tool) {
-    if (panelTitleEl) panelTitleEl.textContent = 'Action Required';
+    if (panelTitleEl) panelTitleEl.textContent = 'Available Action';
     if (panelBodyEl) panelBodyEl.innerHTML = ''; 
 
     const isAvailable = tool.status === 'Available';
