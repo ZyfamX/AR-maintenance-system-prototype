@@ -228,6 +228,12 @@ function registerMarkerListeners() {
  * renders the 2D UI panels, and injects the 3D HUD into the AR scene.
  */
 async function onMarkerFound(markerId) {
+
+    // Added haptic feedback for marker detection
+    if (navigator.vibrate) {
+        navigator.vibrate([50, 50, 50]); 
+    }
+
     const mode = (window.scanMode === 'fault') ? 'fault' : 'tool';
     const markerEl = document.getElementById(`barcode-${markerId}`);
 
