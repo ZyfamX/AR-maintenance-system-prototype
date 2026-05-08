@@ -1,5 +1,5 @@
 import { setupEventListeners, checkSessionOnLoad } from './ui.js';
-import { checkSession } from './api.js';
+import { checkSession, startSessionChecker } from './api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -16,43 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const login = document.getElementById("login-view")
 
-    setInterval(async () => {
-        if (login === null || login?.classList.contains("hidden")) {
-            try {
-                const active = await checkSession();
-                if (!active) {
-                    sessionStorage.setItem("sessionExpired", "true")
-                    window.location.reload();
-                }
-            } catch (err) {
-                console.error("Session check failed:", err)
-            }
-        }
-    }, 60000);
+    startSessionChecker(() => {
+        return login === null || login.classList.contains("hidden");
+    });
     
     console.log("AR Maintenance System Initialized.");
-});
-
-document.addEventListener("visibilitychange", async () => {
-    if (document.visibilityState !== "visible") {
-        return;
-    }
-
-    const login = document.getElementById("login-view")
-    const loginVisible = login === null || login.classList.contains("hidden")
-
-    if (!loginVisible) {
-        return;
-    }
-
-    try {
-        const active = await checkSession();
-
-        if(!active) {
-            sessionStorage.setItem("sessionExpired", "true");
-            window.location.reload();
-        }
-    } catch (err) {
-        console.error("Session check failed:", err)
-    }
 });

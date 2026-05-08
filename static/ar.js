@@ -1,4 +1,10 @@
-import { getTools, getFaults, getUsers, scanTool, getFaultByMarker, updateFault, createFault } from './api.js';
+import { getTools, getFaults, getUsers, scanTool, getFaultByMarker, updateFault, createFault, startSessionChecker } from './api.js';
+
+if (sessionStorage.getItem("sessionExpired") === "true") {
+    sessionStorage.removeItem("sessionExpired");
+
+    alert("Session expired! Please log in again.");
+}
 
 // ============================================================================
 // CUSTOM A-FRAME COMPONENTS
@@ -873,3 +879,6 @@ window.addEventListener('orientationchange', () => {
 
 // Start the AR application flow
 checkCameraSupport();
+
+// Start session expiry checker
+startSessionChecker(() => true);

@@ -82,6 +82,29 @@ export async function checkSession() {
     }
 }
 
+export function startSessionChecker(isActiveCallback = null) {
+    setInterval(async () => {
+        try {
+            if (document.hidden) {
+                return;
+            }
+
+            if (isActiveCallback && !isActiveCallback()) {
+                return;
+            }
+
+            const active = await checkSession();
+
+            if (!active) {
+                sessionStorage.setItem("sessionExpired", "true");
+                window.location.href = "/";
+            }
+        } catch (err) {
+            console.error("Session check failed", err);
+        }
+    }, 60000)
+}
+
 // FAULTS
 // =====================================================================
 
