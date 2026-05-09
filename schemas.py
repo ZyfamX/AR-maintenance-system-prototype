@@ -7,7 +7,8 @@ from typing import Optional
 class UserLogin(BaseModel):
     
     username: str = Field(min_length=3, max_length=50, pattern=r"^[a-zA-Z0-9._-]+$")
-    password: str = Field(min_length=1, max_length=128)
+    # Enforces min length 8, at least one digit (\d), and at least one special character ([^a-zA-Z0-9])
+    password: str = Field(min_length=8, max_length=128, pattern=r"^(?=.*\d)(?=.*[^a-zA-Z0-9]).+$")
 
 
 class UserOut(BaseModel):
