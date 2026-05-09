@@ -144,15 +144,16 @@ body {
     isolation: isolate;
     will-change: transform, opacity;
     
-    /* Highly see-through frosted glass */
-    background: rgba(180, 130, 20, 0.35); 
+    /* THE FIX: Sleek, dark frosted glass */
+    background: rgba(15, 23, 42, 0.75); 
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px); 
     
-    border: 1px solid rgba(255, 220, 100, 0.4);
+    /* Crisp slate border and deep shadow */
+    border: 1px solid rgba(71, 85, 105, 0.6);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
     padding: 16px 20px 24px;
     
-    /* Pushed down, fully transparent, and completely hidden */
     transform: translate(-50%, 100%);
     opacity: 0;
     visibility: hidden; 
@@ -177,20 +178,19 @@ body {
 #panel-title {
     font-size: 1.1rem;
     font-weight: 700;
-    color: #f8fafc; /* Changed to white for better contrast on clear glass */
+    color: #f8fafc; 
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
 
 #panel-close {
     position: absolute;
-    right: 0; /* MOVED TO TOP RIGHT */
+    right: 0; 
     top: 0;
     
-    /* WCAG AAA Contrast Setup */
     background: #1e293b; 
-    border: 2px solid #ffffff; 
-    color: #ffffff;
+    border: 2px solid #64748b; /* Softened the harsh white border */
+    color: #f8fafc;
     
     font-size: 1.5rem;
     cursor: pointer;
@@ -202,7 +202,6 @@ body {
     justify-content: center;
     flex-shrink: 0;
     transition: background 0.2s ease, transform 0.1s ease;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
 }
 
 #panel-close:active {
@@ -215,32 +214,30 @@ body {
    06. INFO PANEL CONTENT (Rows, Labels, Dividers)
 ========================================================= */
 
-/* Each data field is a flex row: label + value side by side */
 .ar-info-row {
     display: flex;
     align-items: flex-start;
     gap: 8px;
     font-size: 0.9rem;
-    color: #1e293b;
+    color: #f8fafc; /* THE FIX: Changed dark text to high-contrast white */
     padding: 2px 0;
 }
 
 .ar-label {
     font-weight: 700;
     flex-shrink: 0;
+    color: #93c5fd; /* THE FIX: Added a soft sky-blue accent for labels */
 }
 
-/* Dashed separator between sections within the panel */
 .ar-divider {
     border: none;
-    border-top: 1px dashed rgba(30, 41, 59, 0.4);
+    border-top: 1px dashed rgba(100, 116, 139, 0.5); /* THE FIX: Lighter dashed line for the dark theme */
     margin: 8px 0;
 }
 
-/* Description and notes text is slightly smaller and muted */
 .ar-description span {
     font-size: 0.82rem;
-    opacity: 0.85;
+    color: #e2e8f0; /* Elevated from #cbd5e1 to guarantee text passes the 7:1 ratio on frosted glass */
 }
 
 
