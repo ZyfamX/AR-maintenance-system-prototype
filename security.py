@@ -5,9 +5,10 @@ import threading
 from filelock import FileLock
 import re
 import time
-from datetime import datetime, UTC
+from datetime import datetime, timedelta, UTC
 import hashlib
 from sessions import start_cleanup_thread
+from threading import Lock
 
 # Password requirement configuration
 # 8+ chars, 1 number, 1 special char (Requirement NF12)
@@ -218,3 +219,39 @@ def start_security_threads():
     # Starts audit log verifier
     audit_verifier_thread = threading.Thread(target=audit_verifier_worker, daemon=True)
     audit_verifier_thread.start()
+
+ip_attempts = {}
+ip_lock = Lock()
+
+def register_failed_ip_attempt(ip: str):
+    now = datetime.now(UTC)
+
+    with ip_lock:
+        ip_data = ip_attempts.get(ip, {
+            "count": 0,
+            "first": now,
+            "blocked_until": None
+        })
+        
+        if now - ip_data["first"] > timedelta(minutes=5):
+            ip_data = {"count": 0, "first": now, "blocked_until": None}
+
+        ip_data["count"] += 1
+
+        if ip_data["count"] >= 20:
+            ip_data["blocked_until"] = now + timedelta(minutes=15)
+
+        ip_attempts[ip] = ip_data
+
+def is_ip_blocked(ip: str) -> bool:
+    now = datetime.now(UTC)
+
+    with ip_lock:
+        ip_data = ip_attempts.get(ip)
+
+        if not ip_data:
+            return False
+        
+        blocked_until = ip_data.get("blocked_until")
+
+        return blocked_until and now < blocked_until

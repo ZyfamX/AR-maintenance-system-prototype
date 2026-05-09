@@ -9,19 +9,6 @@ class UserLogin(BaseModel):
     username: str = Field(min_length=3, max_length=50, pattern=r"^[a-zA-Z0-9._-]+$")
     password: str = Field(min_length=8, max_length=128)
 
-    @field_validator('password')
-    @classmethod
-    def validate_password_complexity(cls, v: str) -> str:
-        # Check for at least one number
-        if not re.search(r"\d", v):
-            raise ValueError("Password must contain at least one number.")
-        
-        # Check for at least one special character (anything not a letter or number)
-        if not re.search(r"[^a-zA-Z0-9]", v):
-            raise ValueError("Password must contain at least one special character.")
-            
-        return v
-
 
 class UserOut(BaseModel):
 

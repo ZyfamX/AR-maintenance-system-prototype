@@ -10,7 +10,7 @@ from typing import List
 from datetime import datetime, timedelta, UTC
 
 from schemas import FaultCreate, FaultUpdate, ToolScan, UserLogin, UserOut, FaultOut, ToolOut
-from security import verify_password, log_system_event, verify_audit_log, start_security_threads
+from security import verify_password, log_system_event, verify_audit_log, start_security_threads, register_failed_ip_attempt, is_ip_blocked
 from sessions import generate_session, validate_session, update_expiry, remove_session
 from threading import Lock
 
@@ -80,8 +80,8 @@ auth_window = timedelta(minutes=1)
 auth_max_requests = 60
 auth_block_duration = timedelta(minutes=5)
 
-ip_lock = Lock()
 auth_ip_lock = Lock()
+users_lock = Lock()
 
 # Reads data from a JSON file in the data/ directory
 def read_json(filename: str):
@@ -143,7 +143,7 @@ async def auth_middleware(request: Request, call_next):
 
     if result["valid"]:
         session_ip = result.get("ip")
-        if session_id and session_ip != client_ip:
+        if session_ip and session_ip != client_ip:
             log_system_event(result["user_id"], "IP_Mismatch", f"Session IP differs to request IP. Session IP ${session_ip}, request IP ${client_ip}", client_ip)
             
             # We can make this block requests, but would likely break anyone connecting through a mobile network where their IP might change
@@ -254,134 +254,127 @@ fault_submission_timestamps = {} # Stores {user_id: datetime}
 perm_lock_threshold = 2
 perm_lock_window_hours = 24
 
-ip_attempts = {}
-
 @app.post("/api/login", response_model=UserOut)
 def login_user(credentials: UserLogin, response: Response, request: Request):
 
     now = datetime.now(UTC)
     client = request.client
     client_ip = client.host if client else "unknown"
+    failed_attempt = False
 
-    with ip_lock:
-        ip_data = ip_attempts.get(client_ip, {
-            "count": 0,
-            "first": now,
-            "blocked_until": None
-        })
+    if is_ip_blocked(client_ip):
+        raise HTTPException(status_code=429, detail="Too Many Requests")
 
-        if ip_data["blocked_until"] and now < ip_data["blocked_until"]:
-            raise HTTPException(status_code=429, detail="Too Many Requests")
-        
-        if now - ip_data["first"] > timedelta(minutes=5):
-            ip_data = {"count": 0, "first": now, "blocked_until": None}
+    with users_lock:
+        users = read_json("users.json")
 
-        ip_data["count"] += 1
+        user_found = False
 
-        if ip_data["count"] >= 20:
-            ip_data["blocked_until"] = now + timedelta(minutes=15)
+        for user in users:
 
-        ip_attempts[client_ip] = ip_data
+            if user["username"] == credentials.username:
 
-    users = read_json("users.json")
+                user_found = True
 
-    user_found = False
-
-    for user in users:
-
-        if user["username"] == credentials.username:
-
-            user_found = True
-
-            # Check if account locked
-            if user["lock_until"]:
-
-                lock_time = datetime.fromisoformat(user["lock_until"])
-
-                if now < lock_time:
-
-                    log_system_event(user["id"], "Blocked_Login", "Attempt to log in to locked account.", client_ip)
+                if user.get("permanently_locked"):
+                    log_system_event(user["id"], "Blocked_Login", "Permanent Lock", client_ip)
+                    failed_attempt = True
                     raise HTTPException(status_code=401, detail="Invalid username or password.")
                 
-                else:
+                # Check if account locked
+                if user["lock_until"]:
+
+                    lock_time = datetime.fromisoformat(user["lock_until"])
+
+                    if now < lock_time:
+
+                        log_system_event(user["id"], "Blocked_Login", "Attempt to log in to locked account.", client_ip)
+                        failed_attempt = True
+                        raise HTTPException(status_code=401, detail="Invalid username or password.")
+                    
+                    else:
+
+                        user["lock_until"] = None
+                        user["failed_attempts"] = 0
+                        write_json("users.json", users)
+
+                # Check password
+                if verify_password(credentials.password, user["password_hash"]):
 
                     user["lock_until"] = None
                     user["failed_attempts"] = 0
 
-            if user.get("permanently_locked"):
-                log_system_event(user["id"], "Blocked_login", "Permanent Lock", client_ip)
-                raise HTTPException(status_code=401, detail="Invalid username or password.")
+                    write_json("users.json", users)
 
-            # Check password
-            if verify_password(credentials.password, user["password_hash"]):
+                    session_id, csrf_token = generate_session(user["id"], client_ip)
 
-                user["lock_until"] = None
-                user["failed_attempts"] = 0
+                    response.set_cookie(
+                        key="session_id",
+                        value=session_id,
+                        httponly=True,
+                        secure=True,
+                        samesite="lax",
+                        max_age=600
+                    )
 
+                    response.set_cookie(
+                        key="csrf_token",
+                        value=csrf_token,
+                        httponly=False,
+                        secure=True,
+                        samesite="lax",
+                        max_age=600
+                    )
+
+                    log_system_event(user["id"], "Successful_Login", f"User {user['username']} successfully logged in.", client_ip)
+
+                    return user
+                
+                # Wrong password
+                user["failed_attempts"] += 1
+
+                if user["failed_attempts"] >= lock_threshold:
+
+                    # Temporary lock
+                    user["lock_until"] = (now + timedelta(minutes=lock_duration_minutes)).isoformat()
+                    user["failed_attempts"] = 0
+
+                    events = user.get("lock_events", [])
+                    events.append(now.isoformat())
+
+                    cutoff = now - timedelta(hours=perm_lock_window_hours)
+                    events = [
+                        e for e in events
+                        if datetime.fromisoformat(e) > cutoff
+                    ]
+
+                    user["lock_events"] = events
+
+                    if len(events) >= perm_lock_threshold:
+                        user["permanently_locked"] = True
+                        user["lock_until"] = None
+
+                        failed_attempt = True
+                        log_system_event(user["id"], "Account_Permanently_Locked", "Multiple lockouts within time window.", client_ip)
+                    else:
+                        failed_attempt = True
+                        log_system_event(user["id"], "Account_Locked", "Too many failed login attempts.", client_ip)
+
+                else:
+                    failed_attempt = True
+                    log_system_event(user["id"], "Unsuccessful_Login", f"Wrong password entered for user {user['username']}.", client_ip)
+                
                 write_json("users.json", users)
 
-                session_id, csrf_token = generate_session(user["id"], client_ip)
-
-                response.set_cookie(
-                    key="session_id",
-                    value=session_id,
-                    httponly=True,
-                    secure=False, # TODO: update to True
-                    samesite="lax",
-                    max_age=600
-                )
-
-                response.set_cookie(
-                    key="csrf_token",
-                    value=csrf_token,
-                    httponly=False,
-                    secure=False, # TODO: update to True
-                    samesite="lax",
-                    max_age=600
-                )
-
-                log_system_event(user["id"], "Successful_Login", f"User {user['username']} successfully logged in.", client_ip)
-
-                return user
-            
-            # Wrong password
-            user["failed_attempts"] += 1
-
-            if user["failed_attempts"] >= lock_threshold:
-
-                # Temporary lock
-                user["lock_until"] = (now + timedelta(minutes=lock_duration_minutes)).isoformat()
-                user["failed_attempts"] = 0
-
-                events = user.get("lock_events", [])
-                events.append(now.isoformat())
-
-                cutoff = now - timedelta(hours=perm_lock_window_hours)
-                events = [
-                    e for e in events
-                    if datetime.fromisoformat(e) > cutoff
-                ]
-
-                user["lock_events"] = events
-
-                if len(events) >= perm_lock_threshold:
-                    user["permanently_locked"] = True
-                    user["lock_until"] = None
-
-                    log_system_event(user["id"], "Account_Permanently_Locked", "Multiple lockouts within time window.", client_ip)
-                else:
-                    log_system_event(user["id"], "Account_Locked", "Too many failed login attempts.", client_ip)
-
-            else:
-                log_system_event(user["id"], "Unsuccessful_Login", f"Wrong password entered for user {user['username']}.", client_ip)
-            
-            write_json("users.json", users)
-
-            break
+                break
 
     # Unknown username or failed login
     if not user_found:
+        failed_attempt = True
         log_system_event(None, "Unsuccessful_Login", f"Unknown username: {credentials.username}", client_ip)
+
+    if failed_attempt:
+        register_failed_ip_attempt(client_ip)
         
     raise HTTPException(status_code=401, detail="Invalid username or password.")
 
