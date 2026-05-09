@@ -1,14 +1,26 @@
 # Pydantic validation models (for secure input/output checking)
-
-from pydantic import BaseModel, Field
+import re
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 
 # USER SCHEMAS ================================================================================================================
 class UserLogin(BaseModel):
     
     username: str = Field(min_length=3, max_length=50, pattern=r"^[a-zA-Z0-9._-]+$")
-    # Enforces min length 8, at least one digit (\d), and at least one special character ([^a-zA-Z0-9])
-    password: str = Field(min_length=8, max_length=128, pattern=r"^(?=.*\d)(?=.*[^a-zA-Z0-9]).+$")
+    password: str = Field(min_length=8, max_length=128)
+
+    @field_validator('password')
+    @classmethod
+    def validate_password_complexity(cls, v: str) -> str:
+        # Check for at least one number
+        if not re.search(r"\d", v):
+            raise ValueError("Password must contain at least one number.")
+        
+        # Check for at least one special character (anything not a letter or number)
+        if not re.search(r"[^a-zA-Z0-9]", v):
+            raise ValueError("Password must contain at least one special character.")
+            
+        return v
 
 
 class UserOut(BaseModel):

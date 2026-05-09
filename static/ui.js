@@ -210,8 +210,12 @@ export function setupEventListeners() {
             submitButton.disabled = true;
 
             // Basic client-side validation before hitting the API
-            if (passwordField.value.length < 8) {
-                loginErrorMessage.textContent = "Password must be at least 8 characters.";
+            const pwd = passwordField.value;
+            const hasNumber = /\d/.test(pwd);
+            const hasSpecial = /[^a-zA-Z0-9]/.test(pwd);
+
+            if (pwd.length < 8 || !hasNumber || !hasSpecial) {
+                loginErrorMessage.textContent = "Invalid username or password.";
                 submitButton.disabled = false;
                 return;
             }
@@ -240,14 +244,9 @@ export function setupEventListeners() {
                 }, 400);
 
             } catch (error) {
-                loginErrorMessage.textContent = error.message || "Invalid credentials.";
+                loginErrorMessage.textContent = "Invalid username or password.";
                 submitButton.disabled = false;
             }
-        });
-
-        // Disable the submit button while the password is too short
-        passwordField.addEventListener('input', () => {
-            submitButton.disabled = passwordField.value.length < 8;
         });
 
         // Toggle plain-text password visibility
