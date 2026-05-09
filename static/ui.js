@@ -242,7 +242,13 @@ export function setupEventListeners() {
 
         // Disable the submit button while the password is too short
         passwordField.addEventListener('input', () => {
-            submitButton.disabled = passwordField.value.length < 8;
+            let pwdLongerThanEight = passwordField.value.length < 8;
+            submitButton.disabled = pwdLongerThanEight;
+            if (pwdLongerThanEight) {
+                loginErrorMessage.textContent = "Password must be at least 8 characters.";
+            } else {
+                loginErrorMessage.textContent = "";
+            }
         });
 
         // Toggle plain-text password visibility
