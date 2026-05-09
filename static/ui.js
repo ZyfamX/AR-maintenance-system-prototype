@@ -205,20 +205,11 @@ export function setupEventListeners() {
         const usernameField = document.getElementById('username');
         const passwordField = document.getElementById('password');
 
+        submitButton.disabled = true;
+
         loginFormElement.addEventListener('submit', async (e) => {
             e.preventDefault();
             submitButton.disabled = true;
-
-            // Basic client-side validation before hitting the API
-            const pwd = passwordField.value;
-            const hasNumber = /\d/.test(pwd);
-            const hasSpecial = /[^a-zA-Z0-9]/.test(pwd);
-
-            if (pwd.length < 8 || !hasNumber || !hasSpecial) {
-                loginErrorMessage.textContent = "Invalid username or password.";
-                submitButton.disabled = false;
-                return;
-            }
 
             try {
                 loginErrorMessage.textContent = "Authenticating...";
@@ -245,8 +236,13 @@ export function setupEventListeners() {
 
             } catch (error) {
                 loginErrorMessage.textContent = "Invalid username or password.";
-                submitButton.disabled = false;
             }
+            submitButton.disabled = false;
+        });
+
+        // Disable the submit button while the password is too short
+        passwordField.addEventListener('input', () => {
+            submitButton.disabled = passwordField.value.length < 8;
         });
 
         // Toggle plain-text password visibility
