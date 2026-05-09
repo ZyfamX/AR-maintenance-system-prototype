@@ -1196,7 +1196,6 @@ const openFaultModal = (faultId, faults, users, normalisedRole, userId) => {
 const setupSupervisorEvents = (faults, tools, users, normalisedRole, userId) => {
 
     // --- FILTERS & SEARCH ---
-
     const searchToolsInput = document.getElementById('search-tools');
     if (searchToolsInput) {
         searchToolsInput.oninput = (e) => {
@@ -1229,12 +1228,57 @@ const setupSupervisorEvents = (faults, tools, users, normalisedRole, userId) => 
         };
     }
 
-    // --- SORTABLE TABLE HEADERS ---
+    // Dynamically updates table headers to show explicit ↑ or ↓ and highlights the active column
+    const updateSortVisuals = (viewId, sortState) => {
+        document.querySelectorAll(`#${viewId} th[data-sort]`).forEach(th => {
+            // Strip out existing arrows
+            let baseText = th.textContent.replace(/[↕↑↓▲▼]/g, '').trim();
+            
+            // Clean up any broken styles applied directly to the TH
+            th.style.display = ''; 
+            th.style.alignItems = '';
+            th.style.justifyContent = '';
+            th.style.userSelect = 'none'; 
+            
+            // Inject the HTML utilizing our new CSS classes
+            if (th.dataset.sort === sortState.sortCol) {
 
+                // ACTIVE COLUMN: Active button with single solid triangle
+                const icon = sortState.sortAsc ? '▲' : '▼';
+                th.innerHTML = `
+                    <div class="sort-header-wrapper">
+                        <span style="white-space: nowrap; padding-right: 10px;">${baseText}</span> 
+                        <div class="sort-separator">
+                            <span class="btn-sort-icon active">${icon}</span>
+                        </div>
+                    </div>`;
+                th.style.color = '#38bdf8'; 
+
+            } else {
+                
+                // INACTIVE COLUMN: Inactive button with stacked thick triangles
+                th.innerHTML = `
+                    <div class="sort-header-wrapper">
+                        <span style="white-space: nowrap; padding-right: 10px;">${baseText}</span> 
+                        <div class="sort-separator">
+                            <span class="btn-sort-icon inactive">
+                                <span style="margin-bottom: 1px;">▲</span>
+                                <span>▼</span>
+                            </span>
+                        </div>
+                    </div>`;
+                th.style.color = '#f8fafc'; 
+            }
+        });
+    };
+
+    // --- SORTABLE TABLE HEADERS ---
     document.querySelectorAll('#all-tools-view th[data-sort]').forEach(headerCell => {
         headerCell.onclick = () => {
-            allToolsSortState.sortAsc = (allToolsSortState.sortCol === headerCell.dataset.sort) ? !allToolsSortState.sortAsc : true; allToolsSortState.sortCol = headerCell.dataset.sort;
+            allToolsSortState.sortAsc = (allToolsSortState.sortCol === headerCell.dataset.sort) ? !allToolsSortState.sortAsc : true; 
+            allToolsSortState.sortCol = headerCell.dataset.sort;
             renderAllTools(tools, users);
+            updateSortVisuals('all-tools-view', allToolsSortState); 
         };
     });
 
@@ -1243,6 +1287,7 @@ const setupSupervisorEvents = (faults, tools, users, normalisedRole, userId) => 
             allFaultsSortState.sortAsc = (allFaultsSortState.sortCol === headerCell.dataset.sort) ? !allFaultsSortState.sortAsc : true;
             allFaultsSortState.sortCol = headerCell.dataset.sort;
             renderAllFaults(faults, users);
+            updateSortVisuals('all-faults-view', allFaultsSortState); 
         };
     });
 
@@ -1251,11 +1296,12 @@ const setupSupervisorEvents = (faults, tools, users, normalisedRole, userId) => 
             reviewQueueState.sortAsc = (reviewQueueState.sortCol === headerCell.dataset.sort) ? !reviewQueueState.sortAsc : true;
             reviewQueueState.sortCol = headerCell.dataset.sort;
             renderReviewQueue(faults, users);
+            updateSortVisuals('review-faults-view', reviewQueueState);
         };
     });
 
-    // --- WORKLOAD BALANCING — ACCORDION & MODALS ---
 
+    // --- WORKLOAD BALANCING — ACCORDION & MODALS ---
     const technicianCardsContainer = document.getElementById('tech-cards-container');
     if (technicianCardsContainer) {
         technicianCardsContainer.onclick = (e) => {
@@ -1348,8 +1394,8 @@ const setupSupervisorEvents = (faults, tools, users, normalisedRole, userId) => 
         };
     }
 
-    // --- TECHNICIAN SELECT MODAL ---
 
+    // --- TECHNICIAN SELECT MODAL ---
     const techModalTableBody = document.getElementById('tech-modal-table-body');
     const techSelectionModal = document.getElementById('tech-select-modal');
 
@@ -1636,6 +1682,12 @@ const setupSupervisorEvents = (faults, tools, users, normalisedRole, userId) => 
             navigateToView('all-tools-view', 'ALL TOOLS');
         };
     }
+
+
+    // Initialize accessibility visuals on first load
+    updateSortVisuals('all-faults-view', allFaultsSortState);
+    updateSortVisuals('all-tools-view', allToolsSortState);
+    updateSortVisuals('review-faults-view', reviewQueueState);
 };
 
 

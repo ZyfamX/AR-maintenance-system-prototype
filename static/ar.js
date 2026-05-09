@@ -514,10 +514,10 @@ async function onMarkerFound(markerId) {
             accentEl.setAttribute('color', mainColor);
             titleEl.setAttribute('text', `value: ${titleStr}; color: #ffffff; width: 3.0; align: left; anchor: left; wrapCount: 20; font: roboto;`);
             
-            // Text width limits
-            const fmtLbl = (val) => `value: ${val}; color: #94a3b8; width: 2.8; align: left; anchor: left; wrapCount: 30; font: roboto;`;
+            // Changed label color from #94a3b8 to #e2e8f0 for AAA contrast
+            const fmtLbl = (val) => `value: ${val}; color: #e2e8f0; width: 2.8; align: left; anchor: left; wrapCount: 30; font: roboto;`;
             const fmtVal = (val, col) => `value: ${val}; color: ${col}; width: 1.8; align: left; anchor: left; wrapCount: 19; font: roboto;`;
-            
+
             lbl1.setAttribute('text', fmtLbl(strL1)); val1.setAttribute('text', fmtVal(strV1, colV1));
             lbl2.setAttribute('text', fmtLbl(strL2)); val2.setAttribute('text', fmtVal(strV2, colV2));
             lbl3.setAttribute('text', fmtLbl(strL3)); val3.setAttribute('text', fmtVal(strV3, colV3));

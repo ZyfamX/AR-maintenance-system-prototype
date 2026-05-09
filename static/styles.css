@@ -9,6 +9,7 @@
    05. UI WIDGETS (KPI Cards, Clickable KPIs, Tables)
    06. WORKLOAD BALANCING (Collapsible Tech Cards)
    08. MOBILE RESPONSIVENESS
+   09. ENHANCED DATA GRID & SORTING UTILITIES
 ========================================================= */
 
 /* =========================================================
@@ -212,7 +213,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
     color: #f8fafc;
     font-size: 0.95rem;
 }
-.input-group input::placeholder { color: #64748b; }
+.input-group input::placeholder { color: #94a3b8; }
 .input-group input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
 
 .form-options { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 25px; }
@@ -345,12 +346,12 @@ header {
 .kpi-title { 
     display: block;
     font-size: 0.85rem; 
-    color: #cbd5e1; 
+    color: #e2e8f0; /* Brightened from #cbd5e1 to ensure 7.5:1 ratio */
     text-transform: uppercase; 
     margin-bottom: 10px; 
     padding-right: 35px; 
     line-height: 1.3;
-    min-height: 2.6em; /* Keeps alignment perfect when adjacent text wraps */
+    min-height: 2.6em; 
 }
 
 /* Background Icons */
@@ -581,4 +582,78 @@ td { padding: 12px 10px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
 
 @keyframes toastExit {
     to { opacity: 0; transform: translateY(-20px); }
+}
+
+
+
+/* =========================================================
+   09. ENHANCED DATA GRID & SORTING UTILITIES
+========================================================= */
+
+/* Table Row Hover Effects */
+tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+tbody tr:hover {
+    background-color: #334155; /* Subtle highlight for the active row */
+}
+
+/* Sortable Header Container */
+.sort-header-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+/* Vertical Separator for Columns */
+.sort-separator {
+    margin-left: auto;
+    border-right: 1px solid #334155;
+    padding-right: 15px;
+    display: flex;
+    align-items: center;
+}
+
+/* Base Sort Button */
+.btn-sort-icon {
+    border-radius: 50%;
+    min-width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+/* Active State (Blue with shadow) */
+.btn-sort-icon.active {
+    background: #38bdf8;
+    color: #0f172a;
+    font-size: 0.70rem;
+    font-weight: 900;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.btn-sort-icon.active:hover {
+    background: #7dd3fc;
+    transform: translateY(-1px);
+}
+
+/* Inactive State (Dark Slate, Stacked Triangles) */
+.btn-sort-icon.inactive {
+    background: #1e293b;
+    color: #cbd5e1; /* Raised from #64748b. UI Icons require 3:1, this hits 5.1:1 */
+    flex-direction: column;
+    line-height: 0.7;
+    font-size: 0.55rem;
+    border: 1px solid #475569; /* Slightly brightened the border so it doesn't vanish */
+}
+
+.btn-sort-icon.inactive:hover {
+    background: #334155;
+    color: #f8fafc; /* Brightens fully on hover */
+    border-color: #64748b;
 }
