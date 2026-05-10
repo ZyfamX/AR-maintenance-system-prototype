@@ -483,7 +483,7 @@ async function onMarkerFound(markerId) {
                 } else if (currentUser && activeItem.current_user_id == currentUser.id) {
                     strV3 = 'IN USE BY YOU'; colV3 = '#3b82f6';
                 } else {
-                    strV3 = `IN USE BY ${getUserFullName(Object.values(usersById), activeItem.reported_by_id).toUpperCase()}`; colV3 = '#fb923c';
+                    strV3 = `IN USE`; colV3 = '#fb923c';
                 }
 
             } else if (activeType === 'fault') {
@@ -576,7 +576,8 @@ function renderToolPanel(tool) {
         } else {
             actionBtnEl.style.display = 'none';
             actionBtnEl.onclick = null;
-            if (panelBodyEl) panelBodyEl.innerHTML = `<div style="text-align:center; color: #f8fafc; font-weight: bold; padding: 10px;">Tool checked out by User #${tool.current_user_id}</div>`;
+            const fullName = getUserFullName(Object.values(usersById), tool.current_user_id);
+            if (panelBodyEl) panelBodyEl.innerHTML = `<div style="text-align:center; color: #f8fafc; font-weight: bold; padding: 10px;">Tool checked out by ${fullName}</div>`;
         }
     }
 }

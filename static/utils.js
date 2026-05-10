@@ -43,7 +43,7 @@ export function formatTime(iso, includeDate = true) {
  */
 export function getUserFullName(usersArray, id) {
     if (!id) return '<span style="color:#64748b;">Unassigned</span>';
-    const matchedUser = usersArray.find(user => user.id === id);
+    const matchedUser = usersArray.find(user => String(user.id) === String(id));
     return matchedUser ? `${matchedUser.first_name} ${matchedUser.last_name}` : `User ${id}`;
 }
 
