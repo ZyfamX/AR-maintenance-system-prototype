@@ -483,7 +483,7 @@ async function onMarkerFound(markerId) {
                 } else if (currentUser && activeItem.current_user_id == currentUser.id) {
                     strV3 = 'IN USE BY YOU'; colV3 = '#3b82f6';
                 } else {
-                    strV3 = `IN USE`; colV3 = '#fb923c';
+                    strV3 = `IN USE BY ${getUserFullName(Object.values(usersById), activeItem.current_user_id)}`; colV3 = '#fb923c';
                 }
 
             } else if (activeType === 'fault') {
