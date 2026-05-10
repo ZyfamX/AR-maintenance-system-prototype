@@ -61,13 +61,13 @@
     "title": "Cracked Windscreen",
     "description": "Impact crack on driver's side windscreen originating from lower edge. Crack length approximately 280mm and propagating toward centre. Fails visual obstruction check.",
     "location": "Bay 2, Bus VH-1992, Front Windscreen",
-    "status": "Resolved",
+    "status": "In-Progress",
     "priority": "High",
     "reported_by_id": 2,
     "timestamp": "2024-10-20T08:00:00",
     "assigned_to_id": 5,
-    "resolved_by_id": 5,
-    "notes": "Windscreen replaced by approved glazing contractor. Signed off and returned to service 2024-10-22.\n\n[Resolution Notes]: Windscreen replaced by approved glazing contractor and signed off. Vehicle returned to service 2024-10-22."
+    "resolved_by_id": null,
+    "notes": "Windscreen Needs replacing by approved glazing contractor."
   },
   {
     "id": 6,
