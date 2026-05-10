@@ -279,7 +279,7 @@ def login_user(credentials: UserLogin, response: Response, request: Request):
                 if user.get("permanently_locked"):
                     log_system_event(user["id"], "Blocked_Login", "Permanent Lock", client_ip)
                     failed_attempt = True
-                    raise HTTPException(status_code=401, detail="Invalid username or password.")
+                    raise HTTPException(status_code=401, detail="Account locked.")
                 
                 # Check if account locked
                 if user["lock_until"]:
@@ -290,7 +290,7 @@ def login_user(credentials: UserLogin, response: Response, request: Request):
 
                         log_system_event(user["id"], "Blocked_Login", "Attempt to log in to locked account.", client_ip)
                         failed_attempt = True
-                        raise HTTPException(status_code=401, detail="Invalid username or password.")
+                        raise HTTPException(status_code=401, detail="Account temporarily locked.")
                     
                     else:
 
@@ -337,6 +337,7 @@ def login_user(credentials: UserLogin, response: Response, request: Request):
 
                     # Temporary lock
                     user["lock_until"] = (now + timedelta(minutes=lock_duration_minutes)).isoformat()
+                    print(user["lock_until"])
                     user["failed_attempts"] = 0
 
                     events = user.get("lock_events", [])
@@ -347,6 +348,7 @@ def login_user(credentials: UserLogin, response: Response, request: Request):
                         e for e in events
                         if datetime.fromisoformat(e) > cutoff
                     ]
+                    print(events)
 
                     user["lock_events"] = events
 
@@ -354,11 +356,13 @@ def login_user(credentials: UserLogin, response: Response, request: Request):
                         user["permanently_locked"] = True
                         user["lock_until"] = None
 
-                        failed_attempt = True
+                        write_json("users.json", users)
                         log_system_event(user["id"], "Account_Permanently_Locked", "Multiple lockouts within time window.", client_ip)
+                        raise HTTPException(status_code=401, detail="Account locked.")
                     else:
-                        failed_attempt = True
+                        write_json("users.json", users)
                         log_system_event(user["id"], "Account_Locked", "Too many failed login attempts.", client_ip)
+                        raise HTTPException(status_code=401, detail="Account temporarily locked.")
 
                 else:
                     failed_attempt = True

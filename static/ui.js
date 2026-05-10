@@ -235,7 +235,13 @@ export function setupEventListeners() {
                 }, 400);
 
             } catch (error) {
-                loginErrorMessage.textContent = "Invalid username or password.";
+                if (error.message === "Account temporarily locked.") {
+                    loginErrorMessage.textContent = "Account temporarily locked. Please try again later or contact the IT Helpdesk.";
+                } else if (error.message === "Account locked.") {
+                    loginErrorMessage.textContent = "Account locked. Please contact the IT Helpdesk.";
+                } else {
+                    loginErrorMessage.textContent = "Invalid username or password.";
+                }
             }
             submitButton.disabled = false;
         });
