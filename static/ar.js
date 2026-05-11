@@ -758,7 +758,7 @@ function openARFaultModal(fault) {
             const newNotes = document.getElementById('ar-resolution-notes').value;
             
             if (!newNotes.trim()) {
-                alert('Please enter Resolution Notes before closing this fault.');
+                showToast('Please enter Resolution Notes before closing this fault.', 'error');
                 return;
             }
 
@@ -864,9 +864,7 @@ function openCreateFaultModal(markerId) {
             
             modal.classList.add('hidden');
 
-            showToast(`Success! Fault logged to Marker #${markerId}.`, 'success');
-            
-            alert(`Success! Fault logged to Marker #${markerId} and sent for review.`);
+            showToast(`Success! Fault logged to Marker #${markerId} and sent for review.`, 'success');
             hideInfoPanel();
             loadData();
             
