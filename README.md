@@ -1,6 +1,54 @@
 # AR-maintenance-system-prototype
-Designing and developing a prototype AR-based maintenance support system for a public transport context. AR technology can n enhance maintenance operations by enabling authorised personnel to visualise fault locations, overlay contextual information onto physical infrastructure, and collaborate securely in real time
+Designing and developing a prototype AR-based maintenance support system for a public transport context. AR technology can enhance maintenance operations by enabling authorised personnel to visualise fault locations, overlay contextual information onto physical infrastructure, and collaborate securely in real time
 
+---
+
+## Setup & Running the Project  
+This setup assumes you are using Windows
+
+### 1. Install Required Software
+Ensure you have the following installed:
+- [Git](https://git-scm.com/install/)
+- [Python 3.11+](https://www.python.org/downloads/)
+- [NGROK](https://ngrok.com/download)
+- A modern web browser (Chrome or Firefox recommended)
+
+### 2. Clone the Repository
+```bash
+git clone https://github.com/ZyfamX/AR-maintenance-system-prototype.git
+cd AR-maintenance-system-prototype
+```
+
+### 3. Create and Activate a Python Virtual Environment
+```bash
+python -m venv .venv
+.venv\Scripts\Activate.bat
+```
+> [!NOTE]
+> Use .venv\Scripts\Activate.ps1 if using PowerShell
+
+### 4. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 5. Start the Application
+```bash
+uvicorn main:app --reload
+```
+
+### 6. Setup HTTPS using NGROK
+Open a new terminal and make sure you have your NGROK authtoken ready.
+```bash
+ngrok http 8000
+```
+Open the link NGROK generated to access the AR interface via HTTPS.
+
+> [!TIP]
+> If you cannot, or do not want to setup NGROK, you can use the hosted demo below:  
+> [https://ar.sirolithewise.uk](https://ar.sirolithewise.uk)
+
+---
 
 ## 🌍 Geofencing & Location Security
 ### How it Works
